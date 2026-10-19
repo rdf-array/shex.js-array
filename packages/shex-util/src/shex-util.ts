@@ -16,7 +16,7 @@ const SX: Namespace = { _namespace: "http://www.w3.org/ns/shex#" };
 ["Schema", "@context", "imports", "startActs", "start", "shapes",
  "ShapeDecl", "ShapeOr", "ShapeAnd", "shapeExprs", "nodeKind",
  "NodeConstraint", "iri", "bnode", "nonliteral", "literal", "datatype", "length", "minlength", "maxlength", "pattern", "flags", "mininclusive", "minexclusive", "maxinclusive", "maxexclusive", "totaldigits", "fractiondigits", "values",
- "ShapeNot", "shapeExpr",
+ "ShapeNot", "shapeExpr", "Collection",
  "Shape", "abstract", "closed", "extra", "expression", "extends", "restricts", "semActs",
  "ShapeRef", "reference", "ShapeExternal",
  "EachOf", "OneOf", "expressions", "min", "max", "annotation",
@@ -943,6 +943,8 @@ const ShExUtil = {
           });
         } else if (shapeExpr.type === "ShapeNot") {
           _walkShapeExpression(shapeExpr.shapeExpr, negated ^ 1); // !!! test negation
+        } else if (shapeExpr.type === "Collection") { // RDF-: each element, as the focus's dependency
+          _walkShapeExpression(shapeExpr.shapeExpr, negated);
         } else if (shapeExpr.type === "Shape") {
           _walkShape(shapeExpr, negated);
         } else if (shapeExpr.type === "NodeConstraint") {
@@ -1102,6 +1104,8 @@ const ShExUtil = {
           if (s.solution) // no .solution for <S> {}
             _dive1(s.solution);
         });
+      } else if (solns.type === "CollectionResults") { // RDF-: one result per element
+        solns.solutions.forEach(_dive1);
       } else if (solns.type === "ShapeOrResults") {
         _dive1(solns.solution);
       } else if (solns.type === "ShapeTest") {
@@ -1208,6 +1212,7 @@ const ShExUtil = {
     case "Failure": // NOT1dotOR2dot_pass-empty
       return null; // !!TODO
     case "ShapeNot": // 1NOTNOTIRI_passIo1,
+    case "Collection": // RDF-
       return _ShExUtil.walkVal(val.shapeExpr, cb);
     case "ShapeOrResults": // 1dotRefOR3_passShape1
       return _ShExUtil.walkVal(val.solution, cb);
@@ -1223,6 +1228,7 @@ const ShExUtil = {
           })
         return ret;
       }, {});
+    case "CollectionResults": // RDF-: bindings from every element
     case "ShapeAndResults": // 1iriRef1_pass-iri
     case "ExtensionResults": // extends-abstract-multi-empty_pass-missingOptRef1
       return val.solutions.reduce((ret: any, exp: any) => {
@@ -1312,6 +1318,21 @@ const ShExUtil = {
       }
       function chaseList (li: any): boolean | undefined {
         if (!li) return false;
+        if (li.type === "CollectionResults") { // RDF-: a sequence value, one result per element
+          li.solutions.forEach((elementResult: any, i: number) => {
+            let newElt = cb({object: li.node[i]});
+            const t = _ShExUtil.walkVal(elementResult, cb);
+            if (t && Object.keys(t).length > 0) { // (an element that is itself a sequence has no properties)
+              if (newElt)
+                newElt.nested = t;
+              else
+                newElt = t;
+            }
+            if (newElt)
+              vals.push(newElt);
+          });
+          return true;
+        }
         if (li.node === RDF.nil) return true;
         if ("solution" in li && "solutions" in li.solution &&
             li.solution.solutions.length === 1 &&
@@ -1492,11 +1513,22 @@ const ShExUtil = {
       const elts = { "ShapeAnd"     : { nary: true , expr: true , prop: "shapeExprs" },
                    "ShapeOr"      : { nary: true , expr: true , prop: "shapeExprs" },
                    "ShapeNot"     : { nary: false, expr: true , prop: "shapeExpr"  },
+                   "Collection"   : { nary: false, expr: true , prop: "shapeExpr"  }, // RDF-
                    "ShapeRef"     : { nary: false, expr: false, prop: "reference"  },
                    "ShapeExternal": { nary: false, expr: false, prop: null         } };
       let ret = findType(v, elts, shapeDeclOrExpr);
-      if (ret !== Missed)
+      if (ret !== Missed) {
+        if (ret.type === "Collection") { // RDF-: its bounds
+          if (SX.min in v)
+            ret.min = parseInt(v[SX.min][0].ldterm.value);
+          if (SX.max in v) {
+            ret.max = parseInt(v[SX.max][0].ldterm.value);
+            if (isNaN(ret.max))
+              ret.max = UNBOUNDED;
+          }
+        }
         return ret;
+      }
 
       const t = v[RDF.type][0].ldterm;
       if (t === SX.ShapeDecl) {

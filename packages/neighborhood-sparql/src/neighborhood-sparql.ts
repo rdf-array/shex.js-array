@@ -381,6 +381,7 @@ export function sparqlDB (endpoint: string, queryTracker?: DbQueryTracker, optio
       case "ShapeAnd":
       case "ShapeOr": se.shapeExprs.forEach(visitShapeExpr); break;
       case "ShapeNot": visitShapeExpr(se.shapeExpr); break;
+      case "Collection": visitShapeExpr(se.shapeExpr); break; // RDF-
       default: break;                          // NodeConstraint, ShapeExternal
       }
     }

@@ -1048,6 +1048,8 @@ export async function entriesFromGraph (store: any, options: GraphOptions = {}):
 
   const quads = (s: any, p: any, o: any): any[] => store.getQuads(s, p, o);
   const listOf = (head: any): any[] => {
+    if (head && head.termType === "Sequence") // RDF-: the list is one sequence term
+      return [...head.elements];
     const items: any[] = [];
     let node = head;
     while (node && !(node.termType === "NamedNode" && node.value === RDF + "nil")) {

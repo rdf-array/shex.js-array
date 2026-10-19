@@ -1,3 +1,29 @@
+<img src=".github/rdf-array-logo.png" alt="[shex.js]" width="96" align="right">
+
+# shex.js-array: shex.js for RDF-
+
+**RDF-** fork of [shex.js](https://github.com/shexjs/shex.js): ShEx over an RDF data model whose
+fifth kind of term is the **sequence**, `(1 2 3)`, in place of `rdf:first`/`rdf:rest` ladders.
+ShEx- adds one shape expression, the **Collection**, `((shapeExpr))[min, max]`:
+
+```shex
+<S> { :p ((LITERAL))[3] }          # :p's value is a sequence of exactly 3 literals
+<T> ((@<S> OR IRI))[1, *]          # a sequence of 1 or more, each a conformant <S> or an IRI
+<U> { :q ((((xsd:integer))[2])) }  # a sequence of pairs of integers, of any length
+```
+
+`[m]` is exactly m elements, `[m, n]` from m to n, `[m, *]` (or `[m,]`) at least m, and no bounds
+any length; `((x))` is always a Collection, `(x)` still a parenthesised shape expression. In ShExJ it
+is `{"type": "Collection", "shapeExpr": …, "min": m, "max": n}` (`-1` unbounded), and a sequence node
+in a shape map or a validation result is the JSON array of its elements. The data side comes from
+[N3.js-array](https://github.com/rdf-array/N3.js-array) and
+[types-array](https://github.com/rdf-array/types-array) (`@rdfjs/types` with `Sequence`), the editor
+grammars from [lezer-shexc-array](https://github.com/rdf-array/lezer-shexc-array) and
+[lezer-turtle-array](https://github.com/rdf-array/lezer-turtle-array), all pinned through `overrides`
+in package.json. [doc/rdf-array.md](doc/rdf-array.md) has the details and what is not done.
+
+---
+
 [![NPM Version](https://badge.fury.io/js/shex.png)](https://npmjs.org/package/shex)
 [![CI](https://github.com/shexjs/shex.js/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/shexjs/shex.js/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/shexjs/shex.js/badge.svg?branch=main)](https://coveralls.io/github/shexjs/shex.js?branch=main)

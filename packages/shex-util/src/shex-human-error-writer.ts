@@ -108,6 +108,11 @@ class ShExHumanErrorWriter {
     case "ShapeNotFailure":
       return ["Node " + dataTerm(val.errors.node, said, "node")
               + " expected to NOT pass " + schemaIri(val.errors.shape, said, "shape")];
+    case "CollectionFailure": // RDF-: ((shapeExpr))[min, max] over a sequence
+      return ["validating " + dataTerm(val.node, said, "node") + " as a collection:"]
+        .concat(this.nest(val.errors, said));
+    case "CollectionElementFailure":
+      return ["element " + val.index + ":"].concat(this.nest(val.errors, said));
     case "SemActFailure":
       // an action that explains itself (extension-path-assert) says what each
       // part evaluated to, one line each, under its message
@@ -205,6 +210,8 @@ function trim (str: string, desired: number, skip: RegExp): string {
 }
 
 function n3ify (ldterm: any): string {
+  if (Array.isArray(ldterm)) // RDF-: a sequence
+    return "(" + ldterm.map(n3ify).join(" ") + ")";
   if (typeof ldterm !== "object")
     return ldterm;
   const ret = "\"" + ldterm.value + "\"";

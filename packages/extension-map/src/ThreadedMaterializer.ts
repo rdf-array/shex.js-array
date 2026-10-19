@@ -52,6 +52,7 @@ const {n3idQuad2RdfJs, n3idTerm2RdfJs} = require("./stringToRdfJs");
 import {ScopeTree, Scope, ListPath, BindingTreeError, isPrefix, pathKey} from "./scopes";
 import {NODE_KEY} from "./bindingTree";
 import {Template, NODE_ARGUMENT, isKeyCode, keyTerms, keyArguments, expandVariable, allMatches} from "./keys";
+import {ld2RdfJsTerm} from "@shexjs/term";
 
 const MapExt = "http://shex.io/extensions/Map/#";
 const variablePattern = /^ *(?:<([^>]*)>|([^:]*):([^ ]*)) *$/;
@@ -1109,6 +1110,8 @@ function collectQuadsAndProvenance (quadList: any[]) {
 }
 
 function n3ify (ldterm: any) { // ShExJson term -> N3id string
+  if (Array.isArray(ldterm)) // RDF-: a sequence stays an RDF/JS term; n3idTerm2RdfJs passes it through
+    return ld2RdfJsTerm(ldterm);
   if (typeof ldterm !== "object" || ldterm === null)
     return ldterm;
   const ret = "\"" + ldterm.value + "\"";
@@ -1230,7 +1233,7 @@ function tripleConstraints (schema: any) {
     switch (expr.type) {
     case "ShapeDecl": return shapeExpr(expr.shapeExpr);
     case "ShapeAnd": case "ShapeOr": return (expr.shapeExprs || []).forEach(shapeExpr);
-    case "ShapeNot": return shapeExpr(expr.shapeExpr);
+    case "ShapeNot": case "Collection": return shapeExpr(expr.shapeExpr);
     case "Shape": return tripleExpr(expr.expression);
     }
   };

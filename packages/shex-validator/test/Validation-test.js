@@ -164,7 +164,12 @@ describe("A ShEx validator", function () {
         if (valFile) {
           valFile = "val/" + valFile;
         }
-        it(EARL
+        // RDF-: the 1list* schemas describe rdf:first/rdf:rest ladders, and data written
+        // `( ... )` is one sequence term, which no ladder shape matches; `manualList` data,
+        // written as explicit rdf:first triples, still passes.  In ShEx- these schemas are
+        // ((.)), ((IRI)) and ((IRI))[1, *] -- see doc/rdf-array.md.
+        const ladderOverSequence = /(^|\/)1list/.test(test.action.schema) && /_list_/.test(test.action.data);
+        (ladderOverSequence ? it.skip : it)(EARL
            ? 'validation/manifest\#' + test.name
            : "should use " + regexModule.name + " to validate data '" + (TERSE ? test.action.data : dataFile) + // test title
            "' against schema '" + (TERSE ? test.action.schema : schemaFile) +

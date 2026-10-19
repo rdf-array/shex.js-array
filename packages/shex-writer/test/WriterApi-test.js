@@ -158,7 +158,7 @@ describe("writer API", function () {
     complains("a document with no type", {shapes: []},
               /to have a \.type/);
     complains("a shape expression of an unknown type", decl(S1, {type: "Bogus"}),
-              /expected Shape\{,And,Or,Ref\} or NodeConstraint/);
+              /expected Shape\{,And,Or,Ref,Collection\} or NodeConstraint/);
     complains("a triple expression of an unknown type", decl(S1, shape({type: "Bogus"})),
               /unexpected expr type: Bogus/);
     complains("a literal where a shape label goes", decl('"lit"', shape(tc())),

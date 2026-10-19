@@ -14,6 +14,7 @@ describe("EditorPanes", function () {
   let dom, saved, makePane, languages;
 
   before(function () {
+    this.timeout(20000); // jsdom and the editor stack take a while to load in a full run
     try {
       jsdom = require("jsdom");
     } catch (e) {

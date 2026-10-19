@@ -6,10 +6,10 @@ start=@<#Schema>
 
 <#Schema> CLOSED {
   a [sx:Schema] ;
-  sx:imports @<#IriList1Plus> ? ;
-  sx:startActs @<#SemActList1Plus> ? ;
+  sx:imports ((IRI))[1, *] ? ;
+  sx:startActs ((@<#SemAct>))[1, *] ? ;
   sx:start @<#shapeDeclOrExpr> ? ;
-  sx:shapes @<#ShapeDeclList1Plus> ?
+  sx:shapes ((@<#ShapeDecl>))[1, *] ?
 }
 
 <#shapeDeclOrExpr> @<#ShapeDecl> OR @<#shapeExpr>
@@ -20,16 +20,16 @@ start=@<#Schema>
   sx:shapeExpr @<#shapeExpr>
 }
 
-<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal>
+<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal> OR @<#Collection>
 
 <#ShapeOr> CLOSED {
   a [sx:ShapeOr] ;
-  sx:shapeExprs @<#shapeDeclOrExprList2Plus>
+  sx:shapeExprs ((@<#shapeDeclOrExpr>))[2, *]
 }
 
 <#ShapeAnd> CLOSED {
   a [sx:ShapeAnd] ;
-  sx:shapeExprs @<#shapeDeclOrExprList2Plus>
+  sx:shapeExprs ((@<#shapeDeclOrExpr>))[2, *]
 }
 
 <#ShapeNot> CLOSED {
@@ -37,24 +37,32 @@ start=@<#Schema>
   sx:shapeExpr @<#shapeDeclOrExpr>
 }
 
+# RDF-: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr
+<#Collection> CLOSED {
+  a [sx:Collection] ;
+  sx:shapeExpr @<#shapeDeclOrExpr> ;
+  sx:min xsd:integer ? ;
+  sx:max xsd:integer ?
+}
+
 <#NodeConstraint> CLOSED {
   a [sx:NodeConstraint] ;
   sx:nodeKind [sx:iri sx:bnode sx:literal sx:nonliteral] ? ;
   sx:datatype IRI ? ;
   &<#xsFacets> ;
-  sx:values @<#valueSetValueList1Plus> ? ;
-  sx:semActs @<#SemActList1Plus> ? ;
-  sx:annotation @<#AnnotationList1Plus> ?
+  sx:values ((@<#valueSetValue>))[1, *] ? ;
+  sx:semActs ((@<#SemAct>))[1, *] ? ;
+  sx:annotation ((@<#Annotation>))[1, *] ?
 }
 
 <#Shape> CLOSED {
   a [sx:Shape] ;
-  sx:extends @<#shapeDeclOrExprList1Plus>? ;
+  sx:extends ((@<#shapeDeclOrExpr>))[1, *] ? ;
   sx:closed [true false] ? ;
   sx:extra IRI * ;
   sx:expression @<#tripleExpression> ? ;
-  sx:semActs @<#SemActList1Plus> ? ;
-  sx:annotation @<#AnnotationList1Plus> ?
+  sx:semActs ((@<#SemAct>))[1, *] ? ;
+  sx:annotation ((@<#Annotation>))[1, *] ?
 }
 
 <#ShapeExternal> CLOSED {
@@ -95,20 +103,20 @@ start=@<#Schema>
 <#valueSetValue> @<#objectValue> OR @<#IriStem> OR @<#IriStemRange>
                                OR @<#LiteralStem> OR @<#LiteralStemRange>
                 OR @<#Language> OR @<#LanguageStem> OR @<#LanguageStemRange>
-<#objectValue> IRI OR LITERAL # rdf:langString breaks on Annotation.object
+<#objectValue> IRI OR LITERAL OR ((@<#objectValue>)) # rdf:langString breaks on Annotation.object # RDF-: or a sequence of them
 
 <#IriStem> CLOSED { a [sx:IriStem] ; sx:stem xsd:string }
 <#IriStemRange> CLOSED {
   a [sx:IriStemRange] ;
   sx:stem xsd:string OR @<#Wildcard> ;
-  sx:exclusion @<#IriStemExclusionList1Plus>
+  sx:exclusion ((IRI OR @<#IriStem>))[1, *]
 }
 
 <#LiteralStem> CLOSED { a [sx:LiteralStem] ; sx:stem xsd:string }
 <#LiteralStemRange> CLOSED {
   a [sx:LiteralStemRange] ;
   sx:stem xsd:string OR @<#Wildcard> ;
-  sx:exclusion @<#LiteralStemExclusionList1Plus>
+  sx:exclusion ((xsd:string OR @<#LiteralStem>))[1, *]
 }
 
 <#Language> CLOSED { a [sx:Language] ; sx:languageTag xsd:string }
@@ -116,7 +124,7 @@ start=@<#Schema>
 <#LanguageStemRange> CLOSED {
   a [sx:LanguageStemRange] ;
   sx:stem xsd:string OR @<#Wildcard> ;
-  sx:exclusion @<#LanguageStemExclusionList1Plus>
+  sx:exclusion ((xsd:string OR @<#LanguageStem>))[1, *]
 }
 
 <#Wildcard> BNODE CLOSED {
@@ -135,18 +143,18 @@ start=@<#Schema>
   a [sx:OneOf] ;
   sx:min xsd:integer ? ;
   sx:max xsd:integer ? ;
-  sx:expressions @<#tripleExpressionList2Plus> ;
-  sx:semActs @<#SemActList1Plus> ? ;
-  sx:annotation @<#AnnotationList1Plus> ?
+  sx:expressions ((@<#tripleExpression>))[2, *] ;
+  sx:semActs ((@<#SemAct>))[1, *] ? ;
+  sx:annotation ((@<#Annotation>))[1, *] ?
 }
 
 <#EachOf> CLOSED {
   a [sx:EachOf] ;
   sx:min xsd:integer ? ;
   sx:max xsd:integer ? ;
-  sx:expressions @<#tripleExpressionList2Plus> ;
-  sx:semActs @<#SemActList1Plus> ? ;
-  sx:annotation @<#AnnotationList1Plus> ?
+  sx:expressions ((@<#tripleExpression>))[2, *] ;
+  sx:semActs ((@<#SemAct>))[1, *] ? ;
+  sx:annotation ((@<#Annotation>))[1, *] ?
 }
 
 <#TripleConstraint> CLOSED {
@@ -156,66 +164,10 @@ start=@<#Schema>
   sx:max xsd:integer ? ;
   sx:predicate IRI ;
   sx:valueExpr @<#shapeDeclOrExpr> ? ;
-  sx:semActs @<#SemActList1Plus> ? ;
-  sx:annotation @<#AnnotationList1Plus> ?
+  sx:semActs ((@<#SemAct>))[1, *] ? ;
+  sx:annotation ((@<#Annotation>))[1, *] ?
 }
 
-# RDF Lists
-
-<#tripleExpressionList2Plus> CLOSED {
-  rdf:first @<#tripleExpression> ;
-  rdf:rest @<#tripleExpressionList1Plus>
-}
-<#tripleExpressionList1Plus> CLOSED {
-  rdf:first @<#tripleExpression> ;
-  rdf:rest  [rdf:nil] OR @<#tripleExpressionList1Plus>
-}
-
-<#IriList1Plus> CLOSED {
-  rdf:first IRI ;
-  rdf:rest  [rdf:nil] OR @<#IriList1Plus>
-}
-
-<#SemActList1Plus> CLOSED {
-  rdf:first @<#SemAct> ;
-  rdf:rest  [rdf:nil] OR @<#SemActList1Plus>
-}
-
-<#ShapeDeclList1Plus> CLOSED {
-  rdf:first @<#ShapeDecl> ;
-  rdf:rest  [rdf:nil] OR @<#ShapeDeclList1Plus>
-}
-
-<#shapeDeclOrExprList2Plus> CLOSED {
-  rdf:first @<#shapeDeclOrExpr> ;
-  rdf:rest  @<#shapeDeclOrExprList1Plus>
-}
-<#shapeDeclOrExprList1Plus> CLOSED {
-  rdf:first @<#shapeDeclOrExpr> ;
-  rdf:rest  [rdf:nil] OR @<#shapeDeclOrExprList1Plus>
-}
-
-<#valueSetValueList1Plus> CLOSED {
-  rdf:first @<#valueSetValue> ;
-  rdf:rest  [rdf:nil] OR @<#valueSetValueList1Plus>
-}
-
-<#AnnotationList1Plus> CLOSED {
-  rdf:first @<#Annotation> ;
-  rdf:rest  [rdf:nil] OR @<#AnnotationList1Plus>
-}
-
-<#IriStemExclusionList1Plus> CLOSED {
-  rdf:first IRI OR @<#IriStem> ;
-  rdf:rest  [rdf:nil] OR @<#IriStemExclusionList1Plus>
-}
-
-<#LiteralStemExclusionList1Plus> CLOSED {
-  rdf:first xsd:string OR @<#LiteralStem> ;
-  rdf:rest  [rdf:nil] OR @<#LiteralStemExclusionList1Plus>
-}
-
-<#LanguageStemExclusionList1Plus> CLOSED {
-  rdf:first xsd:string OR @<#LanguageStem> ;
-  rdf:rest  [rdf:nil] OR @<#LanguageStemExclusionList1Plus>
-}
+# RDF-: there are no RDF lists.  A list written `( ... )` is one sequence term,
+# matched above by the Collection shape expressions ((@<#X>))[1, *] in place of
+# the ListNPlus ladder shapes of shexTest's ShExR.shex.

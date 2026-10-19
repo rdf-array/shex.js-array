@@ -21,7 +21,7 @@ const RdfJsFactory = new DataFactory();
  * @param g graph
  * @returns RdfJs quad
  */
-export function n3idQuad2RdfJs (s: string, p: string, o: string, g?: string): Quad {
+export function n3idQuad2RdfJs (s: string | RdfJsTerm, p: string | RdfJsTerm, o: string | RdfJsTerm, g?: string | RdfJsTerm): Quad {
   const graph = g ? n3idTerm2RdfJs(g) : RdfJsFactory.defaultGraph();
   return RdfJsFactory.quad(
       // there probably some elegant way to do this without lots of casting
@@ -37,7 +37,10 @@ export function n3idQuad2RdfJs (s: string, p: string, o: string, g?: string): Qu
  * @param term N3Id term
  * @returns RdfJs Term
  */
-export function n3idTerm2RdfJs (term: string): RdfJsTerm {
+export function n3idTerm2RdfJs (termOrId: string | RdfJsTerm): RdfJsTerm {
+  if (typeof termOrId === "object" && termOrId !== null && "termType" in termOrId)
+    return termOrId; // already an RDF/JS term: the focus node, or (RDF-) a sequence
+  const term: string = termOrId;
   if (term[0] === "_" && term[1] === ":")
     return RdfJsFactory.blankNode(term.substr(2));
 

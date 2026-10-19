@@ -30,6 +30,39 @@ describe("ShExTerm", function () {
     });
   });
 
+  // RDF-: a sequence term `(1 2)` converts to and from a JSON array of its elements
+  describe("sequences", function () {
+    const one = DF.literal("1", DF.namedNode(XSD + "integer"));
+    const seq = DF.sequence([one, DF.namedNode(base + "x"), DF.sequence([])]);
+    const ld = [{value: "1", type: XSD + "integer"}, base + "x", []];
+
+    it("writes a sequence as a Turtle collection", function () {
+      expect(ShExTerm.rdfJsTerm2Turtle(seq)).to.equal("(\"1\"^^" + XSD + "integer <http://a.example/x> ())");
+      expect(ShExTerm.rdfJsTerm2Turtle(DF.sequence([]))).to.equal("()");
+      expect(ShExTerm.shExJsTerm2Turtle(ld, {base: "", prefixes: {xsd: XSD}})).to.equal("(\"1\"^^xsd:integer <http://a.example/x> ())");
+    });
+
+    it("converts a sequence to a JSON array and back", function () {
+      expect(ShExTerm.rdfJsTerm2Ld(seq)).to.deep.equal(ld);
+      const back = ShExTerm.ld2RdfJsTerm(ld);
+      expect(back.termType).to.equal("Sequence");
+      expect(back.elements.length).to.equal(3);
+      expect(back.elements[2].termType).to.equal("Sequence");
+      expect(back.equals(seq), "shex-term's sequence equals N3's").to.equal(true);
+      expect(seq.equals(back), "and N3's equals shex-term's").to.equal(true);
+    });
+
+    it("makes sequence terms that compare by their elements", function () {
+      const a = ShExTerm.sequenceTerm([one]), b = ShExTerm.sequenceTerm([one]);
+      expect(a.equals(b)).to.equal(true);
+      expect(a.equals(ShExTerm.sequenceTerm([one, one]))).to.equal(false);
+      expect(a.equals(ShExTerm.sequenceTerm([DF.namedNode(base + "x")]))).to.equal(false);
+      expect(a.equals(one)).to.equal(false);
+      expect(a.equals(null)).to.equal(false);
+      expect(ShExTerm.sequenceTerm([]).equals(DF.sequence([]))).to.equal(true);
+    });
+  });
+
   describe("shExJsTerm2Turtle", function () {
     it("writes IRIs, blank nodes and literals", function () {
       expect(ShExTerm.shExJsTerm2Turtle(base + "x")).to.equal("<http://a.example/x>");

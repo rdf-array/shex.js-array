@@ -24,6 +24,15 @@ describe("ShExVisitor", function () {
     expect(() => v.runtimeError(Error("passed through"))).to.throw(/passed through/);
   });
 
+  it("copies a Collection, ((shapeExpr))[min, max] (RDF-)", function () {
+    const v = new ShExVisitor();
+    const coll = {type: "Collection", shapeExpr: {type: "NodeConstraint", nodeKind: "iri"}, min: 1, max: -1};
+    expect(v.visitShapeExpr(coll)).to.deep.equal(coll);
+    expect(v.visitShapeExpr({type: "Collection", shapeExpr: "http://a.example/T"})).to.deep.equal({type: "Collection", shapeExpr: "http://a.example/T"});
+    expect(v.visitShapeExpr({type: "ShapeNot", shapeExpr: coll})).to.deep.equal({type: "ShapeNot", shapeExpr: coll});
+    expect(() => v.visitShapeExpr({type: "Collection", shapeExpr: "http://a.example/T", bogus: 1})).to.throw(/unknown property: "bogus"/);
+  });
+
   it("checks stems, stem ranges and exclusions", function () {
     const v = new ShExVisitor();
     expect(v.visitStemRange({type: "IriStemRange", stem: "http://a.example/", exclusions: ["http://a.example/x", {type: "IriStem", stem: "http://a.example/y"}]}))

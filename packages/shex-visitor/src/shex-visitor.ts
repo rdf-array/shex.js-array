@@ -7,7 +7,7 @@ import {
   IRIREF, IriStemRange, LanguageStemRange, LiteralStemRange, NodeConstraint,
   OneOf,
   Schema, SemAct, Shape,
-  ShapeAnd, ShapeDecl, shapeDeclRef, ShapeExternal, shapeExprOrRef, ShapeNot,
+  Collection, ShapeAnd, ShapeDecl, shapeDeclRef, ShapeExternal, shapeExprOrRef, ShapeNot,
   ShapeOr, TripleConstraint, tripleExprOrRef, tripleExprRef,
   iriRangeExclusion, literalRangeExclusion, languageRangeExclusion,
   nodeKind, valueSetValue,
@@ -173,6 +173,7 @@ export class ShExVisitor {
     case "ShapeAnd": return this.visitShapeAnd(expr, ...args);
     case "ShapeOr": return this.visitShapeOr(expr, ...args);
     case "ShapeNot": return this.visitShapeNot(expr, ...args);
+    case "Collection": return this.visitCollection(expr, ...args);
     case "ShapeExternal": return this.visitShapeExternal(expr, ...args);
     default:
       throw Error("unexpected shapeExpr type: " + (expr as any).type + JSON.stringify(expr));
@@ -202,6 +203,20 @@ export class ShExVisitor {
     if ("id" in expr)
       r.id = (expr as any).id;
     r.shapeExpr = this.visitShapeExpr(expr.shapeExpr, ...args);
+    return r;
+  }
+
+  // RDF-: visitCollection: visit a Collection, ((shapeExpr))[min, max]
+  visitCollection (expr: Collection, ...args: any[]): any {
+    this._testUnknownAttributes(expr, ["shapeExpr", "min", "max"], "Collection", this.visitCollection)
+    const r: any = { type: expr.type };
+    if ("id" in expr)
+      r.id = (expr as any).id;
+    r.shapeExpr = this.visitShapeExpr(expr.shapeExpr, ...args);
+    if (expr.min !== undefined)
+      r.min = expr.min;
+    if (expr.max !== undefined)
+      r.max = expr.max;
     return r;
   }
 
@@ -293,8 +308,11 @@ export class ShExVisitor {
   }
 
   visitValues (values: valueSetValue[], ...args: any[]): any {
+    // RDF-: a value may be a sequence, written as the array of its elements
+    const sequence = (v: any): any => Array.isArray(v) ? v.map(sequence) : typeof v === "object" ? Object.assign({}, v) : v;
     return values.map((t: any) => {
-      return ShExVisitor.isTerm(t) || t.type === "Language" ?
+      return Array.isArray(t) ? sequence(t)
+        : ShExVisitor.isTerm(t) || t.type === "Language" ?
         t :
         this.visitStemRange(t, ...args);
     });

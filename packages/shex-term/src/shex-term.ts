@@ -35,11 +35,25 @@
 */
 
 import * as ShExJ from 'shexj';
-import {Term as RdfJsTerm} from '@rdfjs/types';
+import {Term as RdfJsTerm, Sequence as RdfJsSequence} from '@rdfjs/types';
 const RelativizeIri = require("relativize-url").relativize;
 // import {relativize as RelativizeIri} from "relativize-url"; // someone should lecture the maintainer
 import {DataFactory} from 'rdf-data-factory';
 const RdfJsFactory = new DataFactory();
+
+/** RDF-: an RDF/JS Sequence term over the given elements.  rdf-data-factory
+ * has no sequence(), so this is a plain object; it equals any sequence
+ * (N3.js-array's included) with equal elements in the same order. */
+export function sequenceTerm (elements: RdfJsTerm[]): RdfJsSequence {
+  const value = "(" + elements.map(e => e.termType === "Sequence" ? e.value : rdfJsTerm2Turtle(e)).join(" ") + ")";
+  return {
+    termType: "Sequence", value, elements,
+    equals (other: RdfJsTerm | null | undefined): boolean {
+      return !!other && other.termType === "Sequence" && other.elements.length === elements.length
+        && elements.every((e, i) => e.equals(other.elements[i]));
+    },
+  } as RdfJsSequence;
+}
 import {ObjectLiteral, objectValue} from "shexj";
 
 export {};
@@ -119,11 +133,15 @@ export function rdfJsTerm2Turtle (node: RdfJsTerm, meta?: Meta): string {
         ? ""
         : "^^" + node.datatype.value
     );
+  case ("Sequence"): // RDF-: a sequence writes as a collection of its elements
+    return "(" + node.elements.map(e => rdfJsTerm2Turtle(e, meta)).join(" ") + ")";
   default: throw Error(`rdfJsTerm2Turtle: unknown RDFJS node type: ${JSON.stringify(node)}`)
   }
 }
 
 export function shExJsTerm2Turtle (node: any, meta: Meta = {base: "", prefixes: {}}, aForType?: boolean): any {
+  if (Array.isArray(node)) // RDF-: a sequence, as the array of its elements
+    return "(" + node.map(e => shExJsTerm2Turtle(e, meta, false)).join(" ") + ")";
   if (typeof node === "string") {
     if (node.startsWith("_:")) {
       return node;
@@ -182,6 +200,8 @@ function characterReplacer (character: string): string {
 export function ld2RdfJsTerm (ld: objectValue): RdfJsTerm {
   switch (typeof ld) {
   case 'object':
+    if (Array.isArray(ld)) // RDF-: a sequence, as the array of its elements
+      return sequenceTerm(ld.map(e => ld2RdfJsTerm(e)));
     const copy = JSON.parse(JSON.stringify(ld));
     if (!copy.value)
       throw Error(`JSON-LD-style object literal has no value: ${JSON.stringify(ld)}`)
@@ -219,6 +239,8 @@ export function rdfJsTerm2Ld (term: RdfJsTerm): objectValue {
     if (lang)
       ret.language = lang;
     return ret;
+  case "Sequence": // RDF-: a sequence, as the array of its elements
+    return term.elements.map(e => rdfJsTerm2Ld(e));
   default:
     throw Error(`Unrecognized termType ${term.termType} ${term.value}`);
   }

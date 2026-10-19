@@ -193,21 +193,21 @@ BASE <http://shex.io/examples/shexr-actions>
       const stem = one('sx:stem');
       return {type: 'IriStemRange',
               stem: stem && stem.type === 'Wildcard' ? stem : str(stem),
-              exclusions: one('sx:exclusion')};
+              exclusions: one('sx:exclusion').map(e => e && typeof e === 'object' && 'value' in e ? str(e) : e)};
     """ ] ,
   [ sa:ref sx:LiteralStemRange ;
     sa:code """
       const stem = one('sx:stem');
       return {type: 'LiteralStemRange',
               stem: stem && stem.type === 'Wildcard' ? stem : str(stem),
-              exclusions: one('sx:exclusion')};
+              exclusions: one('sx:exclusion').map(e => e && typeof e === 'object' && 'value' in e ? str(e) : e)};
     """ ] ,
   [ sa:ref sx:LanguageStemRange ;
     sa:code """
       const stem = one('sx:stem');
       return {type: 'LanguageStemRange',
               stem: stem && stem.type === 'Wildcard' ? stem : str(stem),
-              exclusions: one('sx:exclusion')};
+              exclusions: one('sx:exclusion').map(e => e && typeof e === 'object' && 'value' in e ? str(e) : e)};
     """ ] ,
 
   ##### semantic actions and annotations, in the schema being read
@@ -220,49 +220,11 @@ BASE <http://shex.io/examples/shexr-actions>
     """ ] ,
 
   [ sa:ref sx:Annotation ;
-    sa:code "{type: 'Annotation', predicate: one('sx:predicate'), object: one('sx:object')}" ] ,
+    sa:code "{type: 'Annotation', predicate: one('sx:predicate'), object: one('sx:object')}" ]
 
   ##### RDF lists
   #
-  # A list is a shape that recurses on rdf:rest, so a list reduces the way
-  # every other production does: cons the head onto what the tail reduced to.
-
-  [ sa:path "@sx:IriList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:SemActList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:ShapeDeclList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:valueSetValueList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:AnnotationList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:IriStemExclusionList1Plus" ; sa:code """
-      // an excluded literal is its lexical form in ShExJ, where an excluded
-      // IRI or a nested stem is the object it already reduced to
-      const head = one('rdf:first');
-      return [head && typeof head === 'object' && 'value' in head ? str(head) : head]
-        .concat(one('rdf:rest') === nil ? [] : one('rdf:rest'));""" ] ,
-  [ sa:path "@sx:LiteralStemExclusionList1Plus" ; sa:code """
-      // an excluded literal is its lexical form in ShExJ, where an excluded
-      // IRI or a nested stem is the object it already reduced to
-      const head = one('rdf:first');
-      return [head && typeof head === 'object' && 'value' in head ? str(head) : head]
-        .concat(one('rdf:rest') === nil ? [] : one('rdf:rest'));""" ] ,
-  [ sa:path "@sx:LanguageStemExclusionList1Plus" ; sa:code """
-      // an excluded literal is its lexical form in ShExJ, where an excluded
-      // IRI or a nested stem is the object it already reduced to
-      const head = one('rdf:first');
-      return [head && typeof head === 'object' && 'value' in head ? str(head) : head]
-        .concat(one('rdf:rest') === nil ? [] : one('rdf:rest'));""" ] ,
-  [ sa:path "@sx:tripleExpressionList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:shapeDeclOrExprList1Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest') === nil ? [] : one('rdf:rest'))""" ] ,
-
-  # the 2Plus heads have no rdf:nil case: their tail is always another list
-  [ sa:path "@sx:tripleExpressionList2Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest'))""" ] ,
-  [ sa:path "@sx:shapeDeclOrExprList2Plus" ; sa:code """
-      [one('rdf:first')].concat(one('rdf:rest'))""" ]
+  # RDF-: a list written `( ... )` is one sequence term, and ShExR.shex matches
+  # it with a Collection, ((@<#X>))[n, *].  A CollectionResults reduces to the
+  # array of its elements' values, so no action is needed per list shape.
 .

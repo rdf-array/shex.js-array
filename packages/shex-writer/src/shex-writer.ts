@@ -210,12 +210,21 @@ class ShExCWriter {
       [].push.apply(pieces, _ShExCWriter._writeShapeExpr(shapeExpr.shapeExpr, done, forceBraces, 4) as never[]);
       if (parentPrec >= 4)
         pieces.push(")");
+    } else if (shapeExpr.type === "Collection") {
+      // RDF-: ((shapeExpr))[min, max]; [m] is exactly m, [m, *] at least m, no bounds any length
+      pieces.push("((");
+      [].push.apply(pieces, _ShExCWriter._writeShapeExpr(shapeExpr.shapeExpr, done, forceBraces, 0) as never[]);
+      pieces.push("))");
+      if (shapeExpr.min !== undefined || shapeExpr.max !== undefined) {
+        const min = shapeExpr.min ?? 0, max = shapeExpr.max ?? -1;
+        pieces.push("[" + min + (max === min ? "" : max === -1 ? ", *" : ", " + max) + "]");
+      }
     } else if (shapeExpr.type === "Shape") {
       [].push.apply(pieces, _ShExCWriter._writeShape(shapeExpr, done, forceBraces) as never[]);
     } else if (shapeExpr.type === "NodeConstraint") {
       [].push.apply(pieces, _ShExCWriter._writeNodeConstraint(shapeExpr, done) as never[]);
     } else
-      throw Error("expected Shape{,And,Or,Ref} or NodeConstraint in " + JSON.stringify(shapeExpr));
+      throw Error("expected Shape{,And,Or,Ref,Collection} or NodeConstraint in " + JSON.stringify(shapeExpr));
     return pieces;
   }
 

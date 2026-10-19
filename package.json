@@ -86,7 +86,12 @@
     "url": "https://github.com/shexjs/shex.js/issues"
   },
   "overrides": {
-    "brace-expansion": "5.0.8"
+    "brace-expansion": "5.0.8",
+    "@types/shexj": "file:types/shexj",
+    "@rdfjs/types": "github:rdf-array/types-array#rdf-sequences",
+    "n3": "github:rdf-array/N3.js-array#rdf-sequences",
+    "lezer-shexc": "github:rdf-array/lezer-shexc-array#rdf-sequences",
+    "lezer-turtle": "github:rdf-array/lezer-turtle-array#rdf-sequences"
   },
   "shexjs": {
     "independent": [

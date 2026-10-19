@@ -30,6 +30,8 @@ import {
   ShapeAndFailure,
   shapeExprTest,
   ShapeNotFailure,
+  CollectionResults,
+  CollectionFailure,
   ShapeNotResults,
   ShapeAndResults,
   ShapeTest,
@@ -58,7 +60,7 @@ import {
   ShapeNot,
   ShapeOr,
   TripleConstraint,
-  tripleExpr
+  tripleExpr, objectValue
 } from "shexj";
 import {getNumericDatatype, testFacets, testKnownTypes} from "./shex-xsd";
 import {TripleExprFeasibility, TcCounts} from "./feasibility";
@@ -1190,8 +1192,40 @@ export class ShExValidator {
           ? {type: "ShapeAndFailure", errors: andErrors} as ShapeAndFailure
           : {type: "ShapeAndResults", solutions: andPasses} as ShapeAndResults;
 
+      case "Collection": {
+        // RDF-: ((shapeExpr))[min, max] -- the focus is a sequence of min to max
+        // elements, each of which conforms to shapeExpr.  Each element is a
+        // focus node of its own, like a triple constraint's value.
+        const node = rdfJsTerm2Ld(focus);
+        if (focus.termType !== "Sequence")
+          return {type: "CollectionFailure", node, errors: [{
+            type: "SequenceExpected", actual: focus.termType,
+            message: `${ShExTerm.rdfJsTerm2Turtle(focus)} is not a sequence`,
+          }]} as unknown as CollectionFailure;
+        const elements = focus.elements;
+        const min = shapeExpr.min ?? 0, max = shapeExpr.max ?? -1; // -1: unbounded
+        if (elements.length < min || (max !== -1 && elements.length > max))
+          return {type: "CollectionFailure", node, errors: [{
+            type: "CollectionLengthViolation", min, max, length: elements.length,
+            message: `sequence of ${elements.length} element${elements.length === 1 ? "" : "s"} where `
+              + (max === min ? `${min}` : max === -1 ? `at least ${min}` : `${min} to ${max}`) + " expected",
+          }]} as unknown as CollectionFailure;
+        const elementCtx = ctx.followTripleConstraint();
+        const solutions: shapeExprTest[] = [], elementErrors: object[] = [];
+        for (let i = 0; i < elements.length; ++i) {
+          const sub = yield* this.resumeShapeExpr(elements[i], shapeExpr.shapeExpr, elementCtx);
+          if ("errors" in sub)
+            elementErrors.push({type: "CollectionElementFailure", index: i, errors: sub});
+          else
+            solutions.push(sub);
+        }
+        return elementErrors.length > 0
+          ? {type: "CollectionFailure", node, errors: elementErrors} as unknown as CollectionFailure
+          : {type: "CollectionResults", node, solutions} as CollectionResults;
+      }
+
       default:
-        throw Error("expected one of Shape{Ref,And,Or} or NodeConstraint, got " + JSON.stringify(shapeExpr));
+        throw Error("expected one of Shape{Ref,And,Or,Collection} or NodeConstraint, got " + JSON.stringify(shapeExpr));
     }
   }
 
@@ -2173,7 +2207,10 @@ export class ShExValidator {
       if (["iri", "bnode", "literal", "nonliteral"].indexOf(nc.nodeKind) === -1) {
         validationError(`unknown node kind '${nc.nodeKind}'`);
       }
-      if (focus.termType === "BlankNode") {
+      if (focus.termType === "Sequence") { // RDF-: a sequence is none of the node kinds
+        validationError({type: "NodeKindMismatch", expected: nc.nodeKind, actual: "sequence"},
+                        `sequence found when ${nc.nodeKind} expected`);
+      } else if (focus.termType === "BlankNode") {
         if (nc.nodeKind === "iri" || nc.nodeKind === "literal") {
           validationError({type: "NodeKindMismatch", expected: nc.nodeKind, actual: "bnode"},
                           `blank node found when ${nc.nodeKind} expected`);
@@ -2252,8 +2289,10 @@ function valueInExclusions(exclusions: Array<IRIREF | IriStem | ObjectLiteral | 
   })
 }
 
-function testValueSetValue(valueSetValueP: string | ObjectLiteral | IriStem | IriStemRange | LiteralStem | LiteralStemRange | Language | LanguageStem | LanguageStemRange, value: RdfJsTerm) {
-  if (typeof valueSetValueP === "string") { // Iri
+function testValueSetValue(valueSetValueP: string | ObjectLiteral | objectValue[] | IriStem | IriStemRange | LiteralStem | LiteralStemRange | Language | LanguageStem | LanguageStemRange, value: RdfJsTerm): boolean {
+  if (Array.isArray(valueSetValueP)) { // RDF-: a sequence, as the array of its elements
+    return value.termType === "Sequence" && ShExTerm.ld2RdfJsTerm(valueSetValueP).equals(value);
+  } else if (typeof valueSetValueP === "string") { // Iri
     return (value.termType === "NamedNode" && value.value === valueSetValueP);
   } else if (typeof valueSetValueP === "object" // Literal
       && (valueSetValueP.type === undefined

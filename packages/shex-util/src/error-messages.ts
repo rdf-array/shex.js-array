@@ -100,6 +100,8 @@ export function relativeIri (iri: string, base?: string): string | null {
 export function termText (term: any): string {
   if (term === undefined || term === null)
     return "?";
+  if (Array.isArray(term)) // RDF-: a sequence, as the array of its elements
+    return "(" + term.map(termText).join(" ") + ")";
   if (typeof term === "string")
     return term.startsWith("_:") ? term : "<" + term + ">";
   if (typeof term !== "object")
@@ -263,6 +265,15 @@ const leaves: {[type: string]: (err: any, ctx: ErrorContext) => ErrorDescription
     predicate: (ctx.constraint || {}).predicate || (ctx.triple && ctx.triple.predicate),
     triple: ctx.triple,
     node: err.node || ctx.node,
+  }),
+  // RDF-: a Collection, ((shapeExpr))[min, max], wants a sequence of the right length
+  SequenceExpected: (err, ctx) => ({
+    text: err.message || "not a sequence",
+    node: ctx.node,
+  }),
+  CollectionLengthViolation: (err, ctx) => ({
+    text: err.message || ("sequence of " + err.length + " where " + err.min + " to " + err.max + " expected"),
+    node: ctx.node,
   }),
   NegatedProperty: (err, ctx) => ({
     text: "unexpected " + dataTerm(err.property, ctx, "predicate"),

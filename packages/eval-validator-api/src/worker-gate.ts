@@ -86,7 +86,7 @@ export function schemaTripleConstraints (schema: ShExJ.Schema): TripleConstraint
     switch (expr.type) {
     case "ShapeDecl": return shapeExpr(expr.shapeExpr);
     case "ShapeAnd": case "ShapeOr": return (expr.shapeExprs || []).forEach(shapeExpr);
-    case "ShapeNot": return shapeExpr(expr.shapeExpr);
+    case "ShapeNot": case "Collection": return shapeExpr(expr.shapeExpr);
     case "Shape": return tripleExpr(expr.expression);
     }
   };

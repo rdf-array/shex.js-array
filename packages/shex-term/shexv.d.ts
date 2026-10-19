@@ -10,6 +10,7 @@ import {Start} from "@shexjs/neighborhood-api";
 export {};
 
 export type shapeExprTest = ShapeOrResults | ShapeAndResults | ShapeNotResults
+  | CollectionResults | CollectionFailure // RDF-
   | ShapeTest | NodeTest | NodeConstraintTest
   | SolutionList
   | Failure | error | FailureList
@@ -33,6 +34,13 @@ export interface ShapeAndResults {
 export interface ShapeNotResults {
   type: "ShapeNotResults";
   solution: Failure
+}
+
+/** RDF-: a sequence conformed to a Collection, ((shapeExpr))[min, max]: one result per element, in order. */
+export interface CollectionResults {
+  type: "CollectionResults";
+  node: ShExJ.objectValue;       // the sequence, as the array of its elements
+  solutions: shapeExprTest[];
 }
 
 export interface NestedFailure {
@@ -76,6 +84,32 @@ export interface ShapeAndFailure extends NestedFailure {
 
 export interface ShapeNotFailure extends NestedFailure {
   type: "ShapeNotFailure";
+}
+
+/** RDF-: the focus did not conform to a Collection: it is not a sequence (SequenceExpected), has the
+ * wrong number of elements (CollectionLengthViolation), or some elements failed (CollectionElementFailure). */
+export interface CollectionFailure extends NestedFailure {
+  type: "CollectionFailure";
+  node: ShExJ.objectValue;
+}
+
+export interface SequenceExpected extends TypedFailure {
+  type: "SequenceExpected";
+  actual: string;                // the focus's termType
+  message: string;
+}
+
+export interface CollectionLengthViolation extends TypedFailure {
+  type: "CollectionLengthViolation";
+  min: number;
+  max: number;                   // -1 for unbounded
+  length: number;
+  message: string;
+}
+
+export interface CollectionElementFailure extends NestedFailure {
+  type: "CollectionElementFailure";
+  index: number;
 }
 
 export interface TypedFailure { }

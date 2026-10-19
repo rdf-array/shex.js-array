@@ -505,11 +505,12 @@ export function ordered<DB extends NeighborhoodDb | AsyncNeighborhoodDb> (db: DB
 }
 
 const termType2Prec: {
-  [key in 'BlankNode' | 'NamedNode' | 'Literal']: number
+  [key in 'BlankNode' | 'NamedNode' | 'Literal' | 'Sequence']: number
 } = {
   'BlankNode': 1,
   'Literal': 2,
   'NamedNode': 3,
+  'Sequence': 4,                // RDF-: sequences sort after the other terms
 }
 
 function prec (t: RdfJsTerm) : number {

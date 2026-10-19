@@ -43,6 +43,9 @@ const Specs = [
     readme: "shex-shape-path-query",
     first: 'const Fs = require("fs");',
     expect: ["http://instance.example/project1/img1.jpg"],
+    // RDF-: shape-path-core's issue example matches an rdf:first/rdf:rest ladder
+    // shape against data written `( ... )`, one sequence term under RDF-
+    skip: "shape-path-core's example uses a list ladder shape over ( ... ) data",
   },
   { // `node -e '…'` one-liners run as shell commands from the repo root
     readme: "shex-parser",
@@ -134,7 +137,7 @@ describe("README examples", function () {
 
   Specs.forEach((spec, i) => {
     const title = `${spec.readme}: ${spec.first.slice(0, 60)}…`;
-    const run = spec.network && !TEST_network ? it.skip : it;
+    const run = spec.skip || (spec.network && !TEST_network) ? it.skip : it;
     run(title, () => {
       const code = extract(spec.readme, spec.lang, spec.first, spec.nth);
       let out;

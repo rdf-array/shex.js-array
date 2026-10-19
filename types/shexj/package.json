@@ -1,0 +1,24 @@
+{
+    "name": "@types/shexj",
+    "version": "2.2.0",
+    "description": "TypeScript definitions for shexj -- RDF- fork with the Collection shape expression (rdf-array/shex.js-array)",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/shexj",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Eric Prud'hommeaux",
+            "githubUsername": "ericprud",
+            "url": "https://github.com/ericprud"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/shexj"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "nonNpm": true
+}

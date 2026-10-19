@@ -15,10 +15,19 @@ describe("ShExR.shex", function () {
       .to.equal(Fs.readFileSync(SHEXR, "utf8"));
   });
 
-  it("should be the ShExR.shex the spec has", function () {
+  // RDF-: the spec's ShExR.shex matches rdf:first/rdf:rest ladders; this fork's
+  // reads the same documents under RDF-, where `( ... )` is one sequence term, so
+  // every @<#...ListNPlus> ladder shape is a Collection, ((@<#X>))[n, *], and a
+  // Collection shape expression is itself describable in ShExR.
+  it("should be the spec's ShExR.shex read under RDF- (tools/shexr-rdf-array.js)", function () {
+    const text = Fs.readFileSync(SHEXR, "utf8");
+    expect(text).to.not.match(/rdf:first|rdf:rest|rdf:nil|List[012]Plus/);
+    expect(text).to.include("sx:shapes ((@<#ShapeDecl>))[1, *] ?");
+    expect(text).to.include("<#Collection> CLOSED {");
     let spec;
     try { spec = findPath("doc") + "ShExR.shex"; } catch (e) { this.skip(); }
-    expect(Fs.readFileSync(SHEXR, "utf8"), "out of date: cp " + spec + " " + SHEXR)
-      .to.equal(Fs.readFileSync(spec, "utf8"));
+    const {rdfMinusShExR} = require("../../../tools/shexr-rdf-array.js");
+    expect(text, "out of date: node tools/shexr-rdf-array.js && node tools/gen-shexr-schema.js")
+      .to.equal(rdfMinusShExR(Fs.readFileSync(spec, "utf8")));
   });
 });
