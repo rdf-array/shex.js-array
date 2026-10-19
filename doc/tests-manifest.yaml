@@ -11,6 +11,129 @@
 
 # --- packages/shex-webapp/examples/manifest.yaml
 # the validator's own examples
+- schemaLabel: 'RDF-: a colour is three bytes'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3]   # a sequence of exactly 3 bytes
+    }
+  dataLabel: red
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red> :rgb (255 0 0) .
+  queryMap: |
+    <red>@<Colour>
+  status: conformant
+  comment: 'RDF-: `(255 0 0)` is one term, a sequence of three integers, not an rdf:first/rdf:rest ladder of blank nodes. ShEx-''s Collection `((shapeExpr))[3]` matches a sequence of exactly three elements, each satisfying shapeExpr.'
+- schemaLabel: 'RDF-: a colour is three bytes'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3]   # a sequence of exactly 3 bytes
+    }
+  dataLabel: pink has only two components
+  data: |
+    PREFIX : <http://a.example/>
+
+    <pink> :rgb (255 192) .
+  queryMap: |
+    <pink>@<Colour>
+  status: nonconformant
+  comment: 'Two elements where `[3]` wants exactly three: a CollectionLengthViolation. `[m, n]` bounds the length, `[m, *]` (or `[m,]`) is at least m, and no bounds is any length.'
+- schemaLabel: 'RDF-: a polygon is three or more points'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Polygon> {
+      :points ((((xsd:decimal))[2]))[3, *]   # 3 or more points, each a sequence of 2 decimals
+    }
+  dataLabel: a triangle
+  data: |
+    PREFIX : <http://a.example/>
+
+    <triangle> :points ((0.0 0.0) (4.0 0.0) (0.0 3.0)) .
+  queryMap: |
+    <triangle>@<Polygon>
+  status: conformant
+  comment: 'Sequences nest: each element of the outer sequence is a sequence matched by the inner Collection. `((x))` is always a Collection and `(x)` a parenthesised shape expression, so `((((xsd:decimal))[2]))` is a Collection of Collections.'
+- schemaLabel: 'RDF-: a playlist of tracks'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Playlist> {
+      :title  xsd:string ;
+      :tracks ((@<Track>))[1, *]   # one or more tracks, in order
+    }
+
+    <Track> {
+      :title   xsd:string ;
+      :seconds xsd:integer
+    }
+  dataLabel: two tracks
+  data: |
+    PREFIX : <http://a.example/>
+
+    <mix> :title "Monday" ;
+          :tracks (<t1> <t2>) .
+
+    <t1> :title "Intro" ; :seconds 95 .
+    <t2> :title "Outro" ; :seconds 210 .
+  queryMap: |
+    <mix>@<Playlist>
+  status: conformant
+  comment: 'Each element is a focus node of its own: `@<Track>` is checked against the element''s triples, and the order of the tracks is the order of the sequence, with no ladder to walk.'
+- schemaLabel: 'RDF-: a playlist of tracks'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Playlist> {
+      :title  xsd:string ;
+      :tracks ((@<Track>))[1, *]   # one or more tracks, in order
+    }
+
+    <Track> {
+      :title   xsd:string ;
+      :seconds xsd:integer
+    }
+  dataLabel: the second track has no duration
+  data: |
+    PREFIX : <http://a.example/>
+
+    <mix> :title "Monday" ;
+          :tracks (<t1> <t2>) .
+
+    <t1> :title "Intro" ; :seconds 95 .
+    <t2> :title "Outro" .
+  queryMap: |
+    <mix>@<Playlist>
+  status: nonconformant
+  comment: The Collection reports a CollectionElementFailure for element 1 (counting from 0), carrying <Track>'s own errors for <t2>.
+- schemaLabel: 'RDF-: a bag of anything'
+  schema: |
+    PREFIX : <http://a.example/>
+
+    <Bag> {
+      :items ((.))   # a sequence, of any length, of anything
+    }
+  dataLabel: the empty sequence, and an IRI that is no sequence
+  data: |
+    PREFIX : <http://a.example/>
+
+    <empty>    :items () .
+    <notASeq>  :items <x> .
+  queryMap: |
+    <empty>@<Bag>,
+    <notASeq>@!<Bag>
+  status: conformant
+  comment: '`()` is the empty sequence, not rdf:nil, so it is a Collection of length 0. An IRI is not a sequence and fails with SequenceExpected, which the `!` claims. A sequence satisfies no nodeKind (IRI, BNODE, LITERAL, NONLITERAL) but matches `.`.'
 - schemaLabel: clinical observation
   schemaURL: ../packages/shex-webapp/examples/ClinObs.shex
   dataLabel: the least an Observation can be

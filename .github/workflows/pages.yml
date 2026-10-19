@@ -1,0 +1,86 @@
+name: pages
+
+# Build the doc/webpacks bundles (gitignored; jquery-components.* and its
+# hashed assets stay committed -- see .gitignore) and deploy the result to
+# GitHub Pages with actions/deploy-pages, for the rdf-array fork:
+#
+#   https://rdf-array.github.io/shex.js-array/
+#   https://rdf-array.github.io/shex.js-array/packages/shex-webapp/doc/shex.html
+#
+# This is the fork's counterpart of webapps-site.yml, which pushes a
+# `gh-pages` branch for shex.js.org. The artifact is the tracked tree plus the
+# built bundles, laid out as in the repo: everything points at everything
+# else relatively (shex.html loads webpacks/shex-webapp.js, shexmap-simple.html
+# redirects to ../../shex-webapp/doc/shex.html with a plugin URL, and a
+# plugin's `scripts` resolve against the plugin), so a plugin's bundle has to
+# be published beside it. Nothing accumulates between deploys, so unlike the
+# gh-pages publish there is no history to shed.
+#
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions". The
+# github-pages environment must allow the branch named below.
+
+on:
+  push:
+    branches: [rdf-sequences]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; let an in-flight one finish rather than leave a
+# half-published site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: clone shexTest alongside the checkout, on the ref the shex-test dependency names
+        run: |
+          REF=$(sed -n 's|.*"shex-test": "github:shexSpec/shexTest#\([^"]*\)".*|\1|p' package.json)
+          git clone --depth=1 --branch="${REF:-main}" https://github.com/shexSpec/shexTest.git ../shexTest
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      # the github: dependencies on the rdf-array forks (n3, lezer-*,
+      # @rdfjs/types) build in their own `prepare` scripts during this install
+      - run: npm ci
+      - run: npm run webpacks-all
+      - name: stage the site
+        run: |
+          mkdir _site
+          # the tracked tree, then the (ignored) built bundles
+          git ls-files -z | xargs -0 cp --parents -t _site
+          cp --parents -r \
+            packages/shex-webapp/doc/webpacks packages/extension-map/doc/webpacks \
+            packages/extension-reduce/doc/webpacks packages/extension-wasi/doc/webpacks \
+            packages/extension-shacl-sparql/doc/webpacks packages/extension-path-assert/doc/webpacks \
+            -t _site
+          # Drop the clone-local notice from the landing page. sed ranges are
+          # line-based, so the block may span any number of lines; each marker
+          # must sit on its own line (marker lines are deleted whole).
+          sed -i '/<!-- STRIP-FOR-PUBLICATION -->/,/<!-- \/STRIP-FOR-PUBLICATION -->/d' _site/index.html
+          if grep -q 'STRIP-FOR-PUBLICATION' _site/index.html; then
+            echo 'index.html still mentions STRIP-FOR-PUBLICATION after stripping (unbalanced markers?)' >&2
+            exit 1
+          fi
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
