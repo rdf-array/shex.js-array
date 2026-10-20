@@ -85,6 +85,16 @@ describe("extension-sparql", function () {
     Assert.match(ttl, /\(\[/);
   });
 
+  it("CONSTRUCT's bc_ blank-node prefix doesn't stop a sequence's blank node nesting", async () => {
+    const ds = new N3.Store(new N3.Parser({baseIRI: "http://a.example/"})
+                            .parse("<red> <http://a.example/rgb> (255 0 [ <http://a.example/p> <http://a.example/o> ]) ."));
+    const r = await Sparql.run(ds, "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }");
+    const ttl = await Sparql.toTurtle(r.quads, PREFIXES);
+    Assert.doesNotMatch(ttl, /_:/);
+    Assert.match(ttl, /^PREFIX : <http:\/\/a\.example\/>$/m);
+    Assert.match(ttl, /:rgb \(255 0 \[\n\s+:p :o\n\s*\]\) \.$/m);
+  });
+
   it("toTurtle expands multi-line literals", async () => {
     const quads = store().getQuads(null, N3.DataFactory.namedNode("http://a.example/name"), null, null);
     Assert.match(await Sparql.toTurtle(quads, PREFIXES), /"""red\nish"""/);

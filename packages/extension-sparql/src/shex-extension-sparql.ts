@@ -99,11 +99,69 @@ export function termToTurtle (term: RdfJs.Term, prefixes: Prefixes = {}): string
   return termFormatter(prefixes)(term);
 }
 
+/**
+ * Comunica prefixes the blank nodes of a CONSTRUCT's quads ("bc_0_") but not
+ * the ones inside a sequence term, so one node arrives under two labels and
+ * the writer can't nest it.  Drop the prefix everywhere.
+ */
+function unprefixBlanks (term: any): any {
+  if (term.termType === "BlankNode")
+    return {termType: "BlankNode", value: term.value.replace(/^bc_\d+_/, "")};
+  if (term.termType === "Sequence")
+    return {termType: "Sequence", value: term.value, elements: [...term.elements].map(unprefixBlanks)};
+  return term;
+}
+
 /** A graph as readable Turtle. */
 export async function toTurtle (quads: Iterable<RdfJs.Quad>, prefixes: Prefixes = {}): Promise<string> {
   const writer = new Writer({format: "Turtle", prefixes});
-  topoWrite(writer as any, quads as any);
+  topoWrite(writer as any, [...quads].map(q => ({
+    subject: unprefixBlanks(q.subject), predicate: q.predicate,
+    object: unprefixBlanks(q.object), graph: unprefixBlanks(q.graph),
+  })) as any);
   const turtle = await new Promise<string>((resolve, reject) =>
     writer.end((err: any, result: string) => err ? reject(err) : resolve(result)));
-  return expandLiterals(reindent(turtle));
+  return sparqlStyle(expandLiterals(reindent(breakBlanks(turtle))));
+}
+
+/** Apply `fn` to each stretch of Turtle outside string literals and IRIs. */
+function outsideStrings (turtle: string, fn: (c: string, i: number, out: string[]) => number): string {
+  const out: string[] = [];
+  let quote = "";
+  for (let i = 0; i < turtle.length;) {
+    const c = turtle[i];
+    if (quote) {
+      if (c === "\\") { out.push(turtle.substr(i, 2)); i += 2; continue; }
+      if (turtle.startsWith(quote, i)) { out.push(quote); i += quote.length; quote = ""; continue; }
+      out.push(c); ++i; continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = turtle.startsWith(c.repeat(3), i) ? c.repeat(3) : c;
+      out.push(quote); i += quote.length; continue;
+    }
+    if (c === "<") {
+      const end = turtle.indexOf(">", i);
+      if (end !== -1) { out.push(turtle.slice(i, end + 1)); i = end + 1; continue; }
+    }
+    i += fn(c, i, out);
+  }
+  return out.join("");
+}
+
+/** `[ :p :o ]` on one line becomes the same block `[` ... `]` that longer ones get. */
+function breakBlanks (turtle: string): string {
+  return outsideStrings(turtle, (c, i, out) => {
+    if (c === "[" && turtle[i + 1] === " ") { out.push("[\n"); return 2; }
+    if (c === " " && turtle[i + 1] === "]") { out.push("\n"); return 1; }
+    out.push(c); return 1;
+  });
+}
+
+/** `@prefix p: <i>.` as `PREFIX p: <i>`, and ` .` to end a statement. */
+function sparqlStyle (turtle: string): string {
+  const prefixed = turtle.replace(/^@prefix (\S*) (<[^>]*>)\.$/gm, "PREFIX $1 $2");
+  return outsideStrings(prefixed, (c, i, out) => {
+    out.push(c === "." && prefixed[i + 1] === "\n" && prefixed[i - 1] !== " " && /[^\s]/.test(prefixed[i - 1] ?? " ") ? " ." : c);
+    return 1;
+  });
 }
