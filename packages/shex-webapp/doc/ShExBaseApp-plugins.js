@@ -716,10 +716,11 @@ mixin(ShExBaseApp, {
     paneCache(kind, selection) {
         switch (kind) {
             case "json": return new JSONCache(selection);
+            case "text": return new TextCache(selection);
             case "schema": return new SchemaCache(selection, null, this.shexcParser, this.turtleParser);
             case "turtle": return new TurtleCache(selection, null, this.turtleParser);
             default: throw Error("no pane of kind " + JSON.stringify(kind)
-                + "; there are json, schema and turtle");
+                + "; there are json, text, schema and turtle");
         }
     },
     /**

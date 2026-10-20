@@ -1247,6 +1247,17 @@ return module.exports;
   }
 }
 
+/** a pane holding text that is read as it stands: a SPARQL query, say */
+class TextCache extends InterfaceCache {
+  constructor (selection: any) {
+    super(selection, null);
+  }
+
+  async parse (text: string): Promise<any> {
+    return text;
+  }
+}
+
 /** a pane holding JSON: bindings, static variables, anything a plugin
  * wants read back as data rather than as a document */
 class JSONCache extends InterfaceCache {

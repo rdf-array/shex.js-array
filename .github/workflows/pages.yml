@@ -60,7 +60,7 @@ jobs:
           cp --parents -r \
             packages/shex-webapp/doc/webpacks packages/extension-map/doc/webpacks \
             packages/extension-reduce/doc/webpacks packages/extension-wasi/doc/webpacks \
-            packages/extension-shacl-sparql/doc/webpacks packages/extension-path-assert/doc/webpacks \
+            packages/extension-shacl-sparql/doc/webpacks packages/extension-sparql/doc/webpacks packages/extension-path-assert/doc/webpacks \
             -t _site
           # Drop the clone-local notice from the landing page. sed ranges are
           # line-based, so the block may span any number of lines; each marker

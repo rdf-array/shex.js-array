@@ -83,10 +83,14 @@ describe("the examples manifest", () => {
     // keys every entry may carry, whichever source it names.  `dataBase` is
     // one of them: what the data is written against is the app's business,
     // not the source's -- a query service's answers and a Wikibase's pages
-    // arrive without a URL of their own to be written against.
+    // arrive without a URL of their own to be written against.  `plugins`
+    // names what the entry needs loaded, and `query` is the SPARQL plugin's
+    // pane (its descriptor's `manifest.key`): the plugin's business, not the
+    // source's.
     const generic = new Set(["schemaLabel", "schema", "schemaURL", "dataLabel", "data",
                              "dataURL", "queryMap", "queryMapURL", "status", "comment",
-                             "neighborhood", "dataBase", "name", "regexpEngine"]);
+                             "neighborhood", "dataBase", "name", "regexpEngine",
+                             "plugins", "query"]);
     for (const entry of json) {
       const module = modules[entry.neighborhood || "rdfjs"];
       const declared = new Set((module.dbParams || []).map(p => p.name));

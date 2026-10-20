@@ -90,6 +90,7 @@
           "@type": "@id"
         },
         "slurp": "shexjs:slurp",
+        "query": "shexjs:query",
         "explain": "shexjs:explain",
         "regexpEngine": "shexjs:regexpEngine",
         "meta": "shexjs:meta",

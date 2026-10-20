@@ -45,6 +45,28 @@
     <pink>@<Colour>
   status: nonconformant
   comment: 'Two elements where `[3]` wants exactly three: a CollectionLengthViolation. `[m, n]` bounds the length, `[m, *]` (or `[m,]`) is at least m, and no bounds is any length.'
+- schemaLabel: 'RDF-: a colour is three bytes'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3]   # a sequence of exactly 3 bytes
+    }
+  dataLabel: 'red: every triple (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red> :rgb (255 0 0) .
+  queryMap: |
+    <red>@<Colour>
+  status: conformant
+  query: |
+    SELECT ?s ?p ?o
+    WHERE { ?s ?p ?o }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
 - schemaLabel: 'RDF-: a polygon is three or more points'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -62,6 +84,28 @@
     <triangle>@<Polygon>
   status: conformant
   comment: 'Sequences nest: each element of the outer sequence is a sequence matched by the inner Collection. `((x))` is always a Collection and `(x)` a parenthesised shape expression, so `((((xsd:decimal))[2]))` is a Collection of Collections.'
+- schemaLabel: 'RDF-: a polygon is three or more points'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Polygon> {
+      :points ((((xsd:decimal))[2]))[3, *]   # 3 or more points, each a sequence of 2 decimals
+    }
+  dataLabel: 'a triangle: every triple (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <triangle> :points ((0.0 0.0) (4.0 0.0) (0.0 3.0)) .
+  queryMap: |
+    <triangle>@<Polygon>
+  status: conformant
+  query: |
+    SELECT ?s ?p ?o
+    WHERE { ?s ?p ?o }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
 - schemaLabel: 'RDF-: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -116,6 +160,38 @@
     <mix>@<Playlist>
   status: nonconformant
   comment: The Collection reports a CollectionElementFailure for element 1 (counting from 0), carrying <Track>'s own errors for <t2>.
+- schemaLabel: 'RDF-: a playlist of tracks'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Playlist> {
+      :title  xsd:string ;
+      :tracks ((@<Track>))[1, *]   # one or more tracks, in order
+    }
+
+    <Track> {
+      :title   xsd:string ;
+      :seconds xsd:integer
+    }
+  dataLabel: 'two tracks: every triple (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <mix> :title "Monday" ;
+          :tracks (<t1> <t2>) .
+
+    <t1> :title "Intro" ; :seconds 95 .
+    <t2> :title "Outro" ; :seconds 210 .
+  queryMap: |
+    <mix>@<Playlist>
+  status: conformant
+  query: |
+    SELECT ?s ?p ?o
+    WHERE { ?s ?p ?o }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
 - schemaLabel: 'RDF-: a bag of anything'
   schema: |
     PREFIX : <http://a.example/>
@@ -134,6 +210,29 @@
     <notASeq>@!<Bag>
   status: conformant
   comment: '`()` is the empty sequence, not rdf:nil, so it is a Collection of length 0. An IRI is not a sequence and fails with SequenceExpected, which the `!` claims. A sequence satisfies no nodeKind (IRI, BNODE, LITERAL, NONLITERAL) but matches `.`.'
+- schemaLabel: 'RDF-: a bag of anything'
+  schema: |
+    PREFIX : <http://a.example/>
+
+    <Bag> {
+      :items ((.))   # a sequence, of any length, of anything
+    }
+  dataLabel: 'the empty sequence, and an IRI that is no sequence: every triple (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <empty>    :items () .
+    <notASeq>  :items <x> .
+  queryMap: |
+    <empty>@<Bag>,
+    <notASeq>@!<Bag>
+  status: conformant
+  query: |
+    SELECT ?s ?p ?o
+    WHERE { ?s ?p ?o }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
 - schemaLabel: clinical observation
   schemaURL: ../packages/shex-webapp/examples/ClinObs.shex
   dataLabel: the least an Observation can be
@@ -1353,6 +1452,188 @@
     a start action speaks for the whole of the data.
   plugins:
   - ../packages/extension-shacl-sparql/doc/ShExShaclSparqlPlugin.js
+
+# --- packages/extension-sparql/examples/manifest.yaml
+# the SPARQL plugin: queries over the data, with sequences as terms
+- schemaLabel: 'SPARQL: colours as sequences'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    :Colour {
+      :name xsd:string ;
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :paint . ?
+    }
+  data: |
+    PREFIX : <http://a.example/>
+
+    :red   :name "red" ;
+           :rgb (255 0 0) ;
+           :paint [ :brand "Acme" ; :tints ([ :name "light" ] [ :name "dark" ]) ] .
+    :green :name "green" ;
+           :rgb (0 255 0) .
+  queryMap: |
+    <http://a.example/red>@<http://a.example/Colour>,
+    <http://a.example/green>@<http://a.example/Colour>
+  status: conformant
+  dataLabel: 'every triple'
+  query: |
+    SELECT ?s ?p ?o
+    WHERE { ?s ?p ?o }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'A SELECT is a table. The `(255 0 0)` is one cell: a sequence is one term, so it is one ?o.'
+- schemaLabel: 'SPARQL: colours as sequences'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    :Colour {
+      :name xsd:string ;
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :paint . ?
+    }
+  data: |
+    PREFIX : <http://a.example/>
+
+    :red   :name "red" ;
+           :rgb (255 0 0) ;
+           :paint [ :brand "Acme" ; :tints ([ :name "light" ] [ :name "dark" ]) ] .
+    :green :name "green" ;
+           :rgb (0 255 0) .
+  queryMap: |
+    <http://a.example/red>@<http://a.example/Colour>,
+    <http://a.example/green>@<http://a.example/Colour>
+  status: conformant
+  dataLabel: 'the colours, as a table'
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?name ?rgb ?brand
+    WHERE {
+      ?c :name ?name ; :rgb ?rgb .
+      OPTIONAL { ?c :paint/:brand ?brand }
+    }
+    ORDER BY ?name
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: '?brand is unbound for :green, and an unbound cell is shaded rather than empty text.'
+- schemaLabel: 'SPARQL: colours as sequences'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    :Colour {
+      :name xsd:string ;
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :paint . ?
+    }
+  data: |
+    PREFIX : <http://a.example/>
+
+    :red   :name "red" ;
+           :rgb (255 0 0) ;
+           :paint [ :brand "Acme" ; :tints ([ :name "light" ] [ :name "dark" ]) ] .
+    :green :name "green" ;
+           :rgb (0 255 0) .
+  queryMap: |
+    <http://a.example/red>@<http://a.example/Colour>,
+    <http://a.example/green>@<http://a.example/Colour>
+  status: conformant
+  dataLabel: 'a CONSTRUCT, as Turtle'
+  query: |
+    PREFIX : <http://a.example/>
+    CONSTRUCT { ?c :rgb ?rgb ; :paint ?p . ?p :brand ?b }
+    WHERE { ?c :rgb ?rgb ; :paint ?p . ?p :brand ?b }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'A graph is written as Turtle by n3writer-wrapper: the single-use blank node nests as [ ], and the rgb sequence stays `( … )`.'
+- schemaLabel: 'SPARQL: colours as sequences'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    :Colour {
+      :name xsd:string ;
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :paint . ?
+    }
+  data: |
+    PREFIX : <http://a.example/>
+
+    :red   :name "red" ;
+           :rgb (255 0 0) ;
+           :paint [ :brand "Acme" ; :tints ([ :name "light" ] [ :name "dark" ]) ] .
+    :green :name "green" ;
+           :rgb (0 255 0) .
+  queryMap: |
+    <http://a.example/red>@<http://a.example/Colour>,
+    <http://a.example/green>@<http://a.example/Colour>
+  status: conformant
+  dataLabel: 'a DESCRIBE, as Turtle'
+  query: |
+    DESCRIBE <http://a.example/green>
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'DESCRIBE is a graph too.'
+- schemaLabel: 'SPARQL: colours as sequences'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    :Colour {
+      :name xsd:string ;
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :paint . ?
+    }
+  data: |
+    PREFIX : <http://a.example/>
+
+    :red   :name "red" ;
+           :rgb (255 0 0) ;
+           :paint [ :brand "Acme" ; :tints ([ :name "light" ] [ :name "dark" ]) ] .
+    :green :name "green" ;
+           :rgb (0 255 0) .
+  queryMap: |
+    <http://a.example/red>@<http://a.example/Colour>,
+    <http://a.example/green>@<http://a.example/Colour>
+  status: conformant
+  dataLabel: 'an ASK that is true'
+  query: |
+    PREFIX : <http://a.example/>
+    ASK { ?c :name "red" }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'Some colour is named "red".'
+- schemaLabel: 'SPARQL: colours as sequences'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    :Colour {
+      :name xsd:string ;
+      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :paint . ?
+    }
+  data: |
+    PREFIX : <http://a.example/>
+
+    :red   :name "red" ;
+           :rgb (255 0 0) ;
+           :paint [ :brand "Acme" ; :tints ([ :name "light" ] [ :name "dark" ]) ] .
+    :green :name "green" ;
+           :rgb (0 255 0) .
+  queryMap: |
+    <http://a.example/red>@<http://a.example/Colour>,
+    <http://a.example/green>@<http://a.example/Colour>
+  status: conformant
+  dataLabel: 'an ASK that is false'
+  query: |
+    PREFIX : <http://a.example/>
+    ASK { ?c :name "blue" }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'No colour is named "blue".'
 
 # --- packages/extension-path-assert/examples/manifest.yaml
 # the PathAssert extension: XPath-style path expressions over the focus node

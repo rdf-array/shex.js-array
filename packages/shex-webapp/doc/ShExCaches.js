@@ -1104,6 +1104,15 @@ return module.exports;
         throw Error("should not try to get plugin cache items");
     }
 }
+/** a pane holding text that is read as it stands: a SPARQL query, say */
+class TextCache extends InterfaceCache {
+    constructor(selection) {
+        super(selection, null);
+    }
+    async parse(text) {
+        return text;
+    }
+}
 /** a pane holding JSON: bindings, static variables, anything a plugin
  * wants read back as data rather than as a document */
 class JSONCache extends InterfaceCache {

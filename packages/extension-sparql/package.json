@@ -1,0 +1,60 @@
+{
+  "name": "@shexjs/extension-sparql",
+  "version": "1.0.0-alpha.33",
+  "files": [
+    "lib",
+    "src",
+    "doc",
+    "examples"
+  ],
+  "description": "SPARQL queries over the web app's data: a SELECT as a table, a CONSTRUCT or DESCRIBE as Turtle, an ASK as true or false",
+  "author": {
+    "name": "Eric Prud'hommeaux",
+    "email": "eric@w3.org",
+    "url": "http://www.w3.org/People/Eric/"
+  },
+  "keywords": [
+    "shex",
+    "sparql",
+    "rdf",
+    "turtle"
+  ],
+  "license": "MIT",
+  "main": "./lib/shex-extension-sparql.js",
+  "types": "./src/shex-extension-sparql.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "cd ../.. && mocha -C -R dot packages/extension-sparql/test/*test.js",
+    "build": "tsc",
+    "webpack": "webpack --config webpack.config.js --mode production",
+    "prepublishOnly": "npm run webpack"
+  },
+  "dependencies": {
+    "@comunica/query-sparql-rdfjs": "^5.4.1",
+    "n3": "*",
+    "n3writer-wrapper-array": "github:rdf-array/n3writer-wrapper-array#rdf-sequences",
+    "sparqljs": "^3.7.4"
+  },
+  "devDependencies": {
+    "@rdfjs/types": "*",
+    "@shexjs/neighborhood-api": "^1.0.0-alpha.33",
+    "@shexjs/webapp": "^1.0.0-alpha.33",
+    "@types/sparqljs": "^3.1.12",
+    "terser-webpack-plugin": "*",
+    "webpack": "*",
+    "webpack-cli": "*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shexjs/shex.js.git",
+    "directory": "packages/extension-sparql"
+  },
+  "bugs": {
+    "url": "https://github.com/shexjs/shex.js/issues"
+  }
+}
