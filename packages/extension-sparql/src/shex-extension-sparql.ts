@@ -24,7 +24,8 @@
 import type * as RdfJs from "@rdfjs/types";
 import type {QuerySource} from "@shexjs/neighborhood-api";
 import {Parser as SparqlParser} from "sparqljs";
-import {Writer} from "n3";
+import {Writer, DataFactory} from "n3";
+const RelativizeIri = require("relativize-url").relativize;
 import {topoWrite, reindent, expandLiterals} from "n3writer-wrapper-array";
 
 export const SparqlUrl = "http://shex.io/extensions/SPARQL/";
@@ -100,25 +101,32 @@ export function termToTurtle (term: RdfJs.Term, prefixes: Prefixes = {}): string
 }
 
 /**
- * Comunica prefixes the blank nodes of a CONSTRUCT's quads ("bc_0_") but not
- * the ones inside a sequence term, so one node arrives under two labels and
- * the writer can't nest it.  Drop the prefix everywhere.
+ * The IRIs under `base` as relative references (<red>), leaving alone those a
+ * prefix names (:red) and those on another host.
  */
-function unprefixBlanks (term: any): any {
-  if (term.termType === "BlankNode")
-    return {termType: "BlankNode", value: term.value.replace(/^bc_\d+_/, "")};
-  if (term.termType === "Sequence")
-    return {termType: "Sequence", value: term.value, elements: [...term.elements].map(unprefixBlanks)};
-  return term;
+function relativizer (base: string, prefixes: Prefixes): (term: any) => any {
+  const namespaces = Object.values(prefixes);
+  const relativeTo = (iri: string): string => {
+    if (namespaces.some(ns => ns && iri.startsWith(ns))) return iri;
+    try {
+      const rel = RelativizeIri(iri, base);
+      return rel.startsWith("//") ? iri : rel;
+    } catch (e) { return iri; }
+  };
+  const walk = (term: any): any =>
+    term.termType === "NamedNode" ? DataFactory.namedNode(relativeTo(term.value))  // the writer calls .equals
+    : term.termType === "Sequence" ? {termType: "Sequence", value: term.value, elements: [...term.elements].map(walk)}
+    : term;
+  return walk;
 }
 
-/** A graph as readable Turtle. */
-export async function toTurtle (quads: Iterable<RdfJs.Quad>, prefixes: Prefixes = {}): Promise<string> {
+/** A graph as readable Turtle, its IRIs relative to `base` when given. */
+export async function toTurtle (quads: Iterable<RdfJs.Quad>, prefixes: Prefixes = {}, base?: string): Promise<string> {
   const writer = new Writer({format: "Turtle", prefixes});
-  topoWrite(writer as any, [...quads].map(q => ({
-    subject: unprefixBlanks(q.subject), predicate: q.predicate,
-    object: unprefixBlanks(q.object), graph: unprefixBlanks(q.graph),
-  })) as any);
+  const rel = base ? relativizer(base, prefixes) : null;
+  topoWrite(writer as any, (rel
+    ? [...quads].map(q => ({subject: rel(q.subject), predicate: q.predicate, object: rel(q.object), graph: q.graph}))
+    : quads) as any);
   const turtle = await new Promise<string>((resolve, reject) =>
     writer.end((err: any, result: string) => err ? reject(err) : resolve(result)));
   return sparqlStyle(expandLiterals(reindent(breakBlanks(turtle))));

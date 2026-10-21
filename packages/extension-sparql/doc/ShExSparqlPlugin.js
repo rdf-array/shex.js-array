@@ -108,7 +108,7 @@
           break;
         }
         case "graph": {
-          const turtle = await Sparql.toTurtle(answer.quads, prefixes);
+          const turtle = await Sparql.toTurtle(answer.quads, prefixes, this.Caches.inputData.meta.base);
           show.append($("<pre/>").addClass("sparqlTurtle").text(turtle));
           summary = "CONSTRUCT/DESCRIBE: " + answer.quads.length
             + " triple" + (answer.quads.length === 1 ? "" : "s");

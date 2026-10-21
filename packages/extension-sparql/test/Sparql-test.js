@@ -40,10 +40,12 @@ describe("extension-sparql", function () {
     Assert.ok(objects.includes("(255 0 0)"), objects.join(" | "));
   });
 
-  it("can't match a sequence by writing one in a pattern: SPARQL's ( ) is a ladder", async () => {
-    // SPARQL expands (255 0 0) to rdf:first/rdf:rest triples; the data holds one term
+  it("matches a sequence by writing one in a pattern, binding variables from its members", async () => {
+    // comunica-array: ( ) in a pattern is a sequence term, not a first/rest ladder
     Assert.deepStrictEqual(await Sparql.run(store(), "PREFIX : <http://a.example/> ASK { ?c :rgb (255 0 0) }"),
-                           {kind: "ask", boolean: false});
+                           {kind: "ask", boolean: true});
+    const a = await Sparql.run(store(), "PREFIX : <http://a.example/> SELECT ?g WHERE { ?c :rgb (255 ?g 0) }");
+    Assert.deepStrictEqual(a.rows.map(r => r[0].value), ["0"]);
   });
 
   it("leaves a variable a row doesn't bind as null", async () => {
@@ -93,6 +95,15 @@ describe("extension-sparql", function () {
     Assert.doesNotMatch(ttl, /_:/);
     Assert.match(ttl, /^PREFIX : <http:\/\/a\.example\/>$/m);
     Assert.match(ttl, /:rgb \(255 0 \[\n\s+:p :o\n\s*\]\) \.$/m);
+  });
+
+  it("toTurtle relativizes IRIs to a base, but not those a prefix names or on other hosts", async () => {
+    const f = N3.DataFactory;
+    const q = (s, o) => f.quad(f.namedNode(s), f.namedNode("http://a.example/p"), f.namedNode(o));
+    const ttl = await Sparql.toTurtle([q("http://h/d/red", "http://a.example/x"), q("http://h/d/blue", "http://other/y")],
+                                      PREFIXES, "http://h/d/manifest.json");
+    Assert.match(ttl, /^<red> :p :x \.$/m);
+    Assert.match(ttl, /^<blue> :p <http:\/\/other\/y> \.$/m);
   });
 
   it("toTurtle expands multi-line literals", async () => {

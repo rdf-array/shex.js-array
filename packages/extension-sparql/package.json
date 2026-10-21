@@ -32,7 +32,8 @@
     "prepublishOnly": "npm run webpack"
   },
   "dependencies": {
-    "@comunica/query-sparql-rdfjs": "^5.4.1",
+    "@comunica/query-sparql-rdfjs": "file:../../../comunica-array/engines/query-sparql-rdfjs",
+    "relativize-url": "^1.0.0",
     "n3": "*",
     "n3writer-wrapper-array": "github:rdf-array/n3writer-wrapper-array#rdf-sequences",
     "sparqljs": "^3.7.4"

@@ -32,14 +32,12 @@ so `SELECT ?s ?p ?o WHERE { ?s ?p ?o }` shows exactly the triples the data holds
 and a sequence is one cell, `(255 0 0)`, and one `?o`.  Each of the RDF- schemas
 in the app's example manifest has a "every triple (SPARQL)" entry that does this.
 
-SPARQL itself doesn't know sequences, which has two consequences:
-
-- a `( … )` in a query pattern is SPARQL's collection syntax, a first/rest ladder,
-  so it **doesn't match a sequence** in the data (`ASK { ?c :rgb (255 0 0) }` is
-  false); bind the sequence to a variable instead;
-- a query can't look *inside* a sequence: its members can't be reached, so a
-  `CONSTRUCT` copies a sequence whole (a blank node among its members arrives
-  as a dangling `_:` label).
+The query engine is [comunica-array](https://github.com/rdf-array/comunica-array),
+which knows sequences: a `( … )` in a pattern is a sequence term (not SPARQL's
+first/rest ladder), so `ASK { ?c :rgb (255 0 0) }` is true for that data and
+`{ ?c :rgb (255 ?g 0) }` binds `?g` from the members.  The package depends on a
+sibling checkout (`file:../../../comunica-array/engines/query-sparql-rdfjs`), so
+it builds only where comunica-array is built beside this repo.
 
 ## Using it
 
