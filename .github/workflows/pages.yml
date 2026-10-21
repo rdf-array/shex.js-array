@@ -48,6 +48,17 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # extension-sparql and extension-shacl-sparql run Comunica, and the stock
+      # one knows no sequence terms: use comunica-array, a yarn monorepo whose
+      # postinstall builds it, over traqula-array (also built by its postinstall),
+      # both beside this checkout as ../comunica-array's `file:` dependency and
+      # `link:../traqula-array` resolutions expect
+      - name: clone and build traqula-array and comunica-array alongside the checkout
+        run: |
+          for repo in traqula-array comunica-array; do
+            git clone --depth=1 --branch=rdf-sequences "https://github.com/rdf-array/$repo.git" "../$repo"
+            (cd "../$repo" && yarn install --frozen-lockfile)
+          done
       # the github: dependencies on the rdf-array forks (n3, lezer-*,
       # @rdfjs/types) build in their own `prepare` scripts during this install
       - run: npm ci

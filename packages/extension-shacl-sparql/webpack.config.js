@@ -14,6 +14,11 @@ module.exports = {
   externals: {
     "@shexjs/webapp": "var ShExWebApp",
   },
+  resolve: {
+    // comunica-array is linked from a sibling checkout that keeps each
+    // lib/Foo.ts beside its compiled Foo.js; take the .js
+    extensions: [".js", ".json"],
+  },
   output: {
     filename: "[name].js",
     path: Path.resolve(__dirname, DocDir, WebPacksDir),
