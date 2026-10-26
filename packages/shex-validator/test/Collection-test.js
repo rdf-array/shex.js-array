@@ -1,5 +1,5 @@
-/** RDF-: validating sequence terms against the Collection shape expression,
- * `((shapeExpr))[min, max]`.  The data is Turtle- parsed by N3.js-array, where
+/** rdf-array: validating sequence terms against the Collection shape expression,
+ * `((shapeExpr))[min, max]`.  The data is Turtle-array parsed by N3.js-array, where
  * `(1 2 3)` is one sequence term, not an rdf:first/rdf:rest ladder. */
 "use strict";
 
@@ -25,7 +25,7 @@ function validate (schemaText, dataText, node, engine) {
 }
 const count = (result, type) => (JSON.stringify(result.appinfo).match(new RegExp(`"type":"${type}"`, "g")) || []).length;
 
-[Threaded, Simple].forEach(engine => describe("RDF- collections, under " + engine.name, function () {
+[Threaded, Simple].forEach(engine => describe("rdf-array collections, under " + engine.name, function () {
 
   it("accepts a sequence of the right length whose elements conform", function () {
     const result = validate("<S> { :p ((LITERAL))[3] }", ":x :p (1 2 3) .", null, engine);

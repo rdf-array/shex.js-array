@@ -39,7 +39,7 @@ export function n3idQuad2RdfJs (s: string | RdfJsTerm, p: string | RdfJsTerm, o:
  */
 export function n3idTerm2RdfJs (termOrId: string | RdfJsTerm): RdfJsTerm {
   if (typeof termOrId === "object" && termOrId !== null && "termType" in termOrId)
-    return termOrId; // already an RDF/JS term: the focus node, or (RDF-) a sequence
+    return termOrId; // already an RDF/JS term: the focus node, or (rdf-array) a sequence
   const term: string = termOrId;
   if (term[0] === "_" && term[1] === ":")
     return RdfJsFactory.blankNode(term.substr(2));

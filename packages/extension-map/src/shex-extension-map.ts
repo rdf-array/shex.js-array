@@ -377,7 +377,7 @@ function done (validator: any) {
 }
 
 function n3ify (ldterm: any) {
-  if (Array.isArray(ldterm)) // RDF-: a sequence stays an RDF/JS term; n3idTerm2RdfJs passes it through
+  if (Array.isArray(ldterm)) // rdf-array: a sequence stays an RDF/JS term; n3idTerm2RdfJs passes it through
     return ShExTerm.ld2RdfJsTerm(ldterm);
   if (typeof ldterm !== "object")
     return ldterm;

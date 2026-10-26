@@ -1,4 +1,4 @@
-/** RDF-: the Collection shape expression, `((shapeExpr))[min, max]`.
+/** rdf-array: the Collection shape expression, `((shapeExpr))[min, max]`.
  *
  * A sequence term `(1 2 3)` is one RDF node; a Collection says how many
  * elements it has and what each must conform to.  `[m]` is exactly m
@@ -20,7 +20,7 @@ const shapeExprOf = text => parse(text).shapes[0].shapeExpr;
 const dt = {type: "NodeConstraint", datatype: T};
 const coll = (shapeExpr, bounds) => Object.assign({type: "Collection", shapeExpr}, bounds);
 
-describe("RDF- collections: ((shapeExpr))[min, max]", function () {
+describe("rdf-array collections: ((shapeExpr))[min, max]", function () {
 
   it("parses ((shapeExpr)) with each form of bounds", function () {
     expect(shapeExprOf("<S> ((<T>))")).to.deep.equal(coll(dt));

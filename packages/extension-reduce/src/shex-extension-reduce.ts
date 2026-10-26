@@ -478,7 +478,7 @@ function reduceNode (f: Fold, node: any): any {
       : values;
   }
 
-  case 'CollectionResults':         // RDF-: a value per element
+  case 'CollectionResults':         // rdf-array: a value per element
     return node.solutions.map((s: any) => reduceNode(f, s));
 
   case 'ShapeOrResults':

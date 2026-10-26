@@ -11,7 +11,7 @@
 
 # --- packages/shex-webapp/examples/manifest.yaml
 # the validator's own examples
-- schemaLabel: 'RDF-: a colour is three bytes'
+- schemaLabel: 'rdf-array: a colour is three bytes'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -27,8 +27,8 @@
   queryMap: |
     <red>@<Colour>
   status: conformant
-  comment: 'RDF-: `(255 0 0)` is one term, a sequence of three integers, not an rdf:first/rdf:rest ladder of blank nodes. ShEx-''s Collection `((shapeExpr))[3]` matches a sequence of exactly three elements, each satisfying shapeExpr.'
-- schemaLabel: 'RDF-: a colour is three bytes'
+  comment: 'rdf-array: `(255 0 0)` is one term, a sequence of three integers, not an rdf:first/rdf:rest ladder of blank nodes. ShEx-array''s Collection `((shapeExpr))[3]` matches a sequence of exactly three elements, each satisfying shapeExpr.'
+- schemaLabel: 'rdf-array: a colour is three bytes'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -45,7 +45,7 @@
     <pink>@<Colour>
   status: nonconformant
   comment: 'Two elements where `[3]` wants exactly three: a CollectionLengthViolation. `[m, n]` bounds the length, `[m, *]` (or `[m,]`) is at least m, and no bounds is any length.'
-- schemaLabel: 'RDF-: a colour is three bytes'
+- schemaLabel: 'rdf-array: a colour is three bytes'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -67,7 +67,7 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
-- schemaLabel: 'RDF-: a polygon is three or more points'
+- schemaLabel: 'rdf-array: a polygon is three or more points'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -84,7 +84,7 @@
     <triangle>@<Polygon>
   status: conformant
   comment: 'Sequences nest: each element of the outer sequence is a sequence matched by the inner Collection. `((x))` is always a Collection and `(x)` a parenthesised shape expression, so `((((xsd:decimal))[2]))` is a Collection of Collections.'
-- schemaLabel: 'RDF-: a polygon is three or more points'
+- schemaLabel: 'rdf-array: a polygon is three or more points'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -106,7 +106,7 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
-- schemaLabel: 'RDF-: a playlist of tracks'
+- schemaLabel: 'rdf-array: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -133,7 +133,7 @@
     <mix>@<Playlist>
   status: conformant
   comment: 'Each element is a focus node of its own: `@<Track>` is checked against the element''s triples, and the order of the tracks is the order of the sequence, with no ladder to walk.'
-- schemaLabel: 'RDF-: a playlist of tracks'
+- schemaLabel: 'rdf-array: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -160,7 +160,7 @@
     <mix>@<Playlist>
   status: nonconformant
   comment: The Collection reports a CollectionElementFailure for element 1 (counting from 0), carrying <Track>'s own errors for <t2>.
-- schemaLabel: 'RDF-: a playlist of tracks'
+- schemaLabel: 'rdf-array: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
@@ -192,7 +192,7 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
-- schemaLabel: 'RDF-: a bag of anything'
+- schemaLabel: 'rdf-array: a bag of anything'
   schema: |
     PREFIX : <http://a.example/>
 
@@ -210,7 +210,7 @@
     <notASeq>@!<Bag>
   status: conformant
   comment: '`()` is the empty sequence, not rdf:nil, so it is a Collection of length 0. An IRI is not a sequence and fails with SequenceExpected, which the `!` claims. A sequence satisfies no nodeKind (IRI, BNODE, LITERAL, NONLITERAL) but matches `.`.'
-- schemaLabel: 'RDF-: a bag of anything'
+- schemaLabel: 'rdf-array: a bag of anything'
   schema: |
     PREFIX : <http://a.example/>
 

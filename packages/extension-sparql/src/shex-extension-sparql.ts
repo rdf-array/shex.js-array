@@ -14,7 +14,7 @@
  * `toTurtle(quads, prefixes)` writes a graph as Turtle with n3writer-wrapper
  * (single-use blank nodes nested as [ ], one indent step at every depth,
  * multi-line literals as """…"""), and `termToTurtle` writes one term for a
- * table cell.  Both go through the RDF- (rdf-sequences) forks of N3.js and
+ * table cell.  Both go through the rdf-array (rdf-sequences) forks of N3.js and
  * n3writer-wrapper, so a sequence term comes out as `(255 0 0)`.
  *
  * Comunica queries a dataset in place, its default graph the union of all

@@ -30,9 +30,9 @@ const SpqueryTests = [
   }
 ]
 
-// RDF-: shape-path-core's issue example describes :discussion with an
+// rdf-array: shape-path-core's issue example describes :discussion with an
 // rdf:first/rdf:rest ladder shape (@<#DiscList1>) while its data writes the
-// discussion as `( ... )`, one sequence term under RDF-; the example lives in a
+// discussion as `( ... )`, one sequence term under rdf-array; the example lives in a
 // dependency, so the test is left out rather than the example rewritten
 // (((@<#DiscItem>))[1, *] would say it).  See doc/rdf-array.md.
 describe('spquery-test', () => {

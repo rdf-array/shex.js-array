@@ -1,4 +1,4 @@
-/** RDF-: writing the Collection shape expression, `((shapeExpr))[min, max]`. */
+/** rdf-array: writing the Collection shape expression, `((shapeExpr))[min, max]`. */
 "use strict";
 
 const {expect} = require("chai");
@@ -19,7 +19,7 @@ function write (schema) {
 }
 const parse = text => ShExParser.construct(BASE, null, {}).parse(text, BASE, undefined, "Collection-test");
 
-describe("RDF- collections: writing ((shapeExpr))[min, max]", function () {
+describe("rdf-array collections: writing ((shapeExpr))[min, max]", function () {
 
   it("writes the bounds as they were read", function () {
     const body = text => text.replace(/^<[^>]*> /, "").trim();

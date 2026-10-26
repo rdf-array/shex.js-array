@@ -24,7 +24,7 @@ describe("ShExVisitor", function () {
     expect(() => v.runtimeError(Error("passed through"))).to.throw(/passed through/);
   });
 
-  it("copies a Collection, ((shapeExpr))[min, max] (RDF-)", function () {
+  it("copies a Collection, ((shapeExpr))[min, max] (rdf-array)", function () {
     const v = new ShExVisitor();
     const coll = {type: "Collection", shapeExpr: {type: "NodeConstraint", nodeKind: "iri"}, min: 1, max: -1};
     expect(v.visitShapeExpr(coll)).to.deep.equal(coll);

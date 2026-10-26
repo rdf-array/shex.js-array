@@ -231,7 +231,7 @@ BASE <http://shex.io/examples/shexr-actions>
 
   ##### RDF lists
   #
-  # RDF-: a list written `( ... )` is one sequence term, and ShExR.shex matches
+  # rdf-array: a list written `( ... )` is one sequence term, and ShExR.shex matches
   # it with a Collection, ((@<#X>))[n, *].  A CollectionResults reduces to the
   # array of its elements' values, so no action is needed per list shape.
 .

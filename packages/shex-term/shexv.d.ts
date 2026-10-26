@@ -10,7 +10,7 @@ import {Start} from "@shexjs/neighborhood-api";
 export {};
 
 export type shapeExprTest = ShapeOrResults | ShapeAndResults | ShapeNotResults
-  | CollectionResults | CollectionFailure // RDF-
+  | CollectionResults | CollectionFailure // rdf-array
   | ShapeTest | NodeTest | NodeConstraintTest
   | SolutionList
   | Failure | error | FailureList
@@ -36,7 +36,7 @@ export interface ShapeNotResults {
   solution: Failure
 }
 
-/** RDF-: a sequence conformed to a Collection, ((shapeExpr))[min, max]: one result per element, in order. */
+/** rdf-array: a sequence conformed to a Collection, ((shapeExpr))[min, max]: one result per element, in order. */
 export interface CollectionResults {
   type: "CollectionResults";
   node: ShExJ.objectValue;       // the sequence, as the array of its elements
@@ -86,7 +86,7 @@ export interface ShapeNotFailure extends NestedFailure {
   type: "ShapeNotFailure";
 }
 
-/** RDF-: the focus did not conform to a Collection: it is not a sequence (SequenceExpected), has the
+/** rdf-array: the focus did not conform to a Collection: it is not a sequence (SequenceExpected), has the
  * wrong number of elements (CollectionLengthViolation), or some elements failed (CollectionElementFailure). */
 export interface CollectionFailure extends NestedFailure {
   type: "CollectionFailure";

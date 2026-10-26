@@ -41,7 +41,7 @@ const RelativizeIri = require("relativize-url").relativize;
 import {DataFactory} from 'rdf-data-factory';
 const RdfJsFactory = new DataFactory();
 
-/** RDF-: an RDF/JS Sequence term over the given elements.  rdf-data-factory
+/** rdf-array: an RDF/JS Sequence term over the given elements.  rdf-data-factory
  * has no sequence(), so this is a plain object; it equals any sequence
  * (N3.js-array's included) with equal elements in the same order. */
 export function sequenceTerm (elements: RdfJsTerm[]): RdfJsSequence {
@@ -133,14 +133,14 @@ export function rdfJsTerm2Turtle (node: RdfJsTerm, meta?: Meta): string {
         ? ""
         : "^^" + node.datatype.value
     );
-  case ("Sequence"): // RDF-: a sequence writes as a collection of its elements
+  case ("Sequence"): // rdf-array: a sequence writes as a collection of its elements
     return "(" + node.elements.map(e => rdfJsTerm2Turtle(e, meta)).join(" ") + ")";
   default: throw Error(`rdfJsTerm2Turtle: unknown RDFJS node type: ${JSON.stringify(node)}`)
   }
 }
 
 export function shExJsTerm2Turtle (node: any, meta: Meta = {base: "", prefixes: {}}, aForType?: boolean): any {
-  if (Array.isArray(node)) // RDF-: a sequence, as the array of its elements
+  if (Array.isArray(node)) // rdf-array: a sequence, as the array of its elements
     return "(" + node.map(e => shExJsTerm2Turtle(e, meta, false)).join(" ") + ")";
   if (typeof node === "string") {
     if (node.startsWith("_:")) {
@@ -200,7 +200,7 @@ function characterReplacer (character: string): string {
 export function ld2RdfJsTerm (ld: objectValue): RdfJsTerm {
   switch (typeof ld) {
   case 'object':
-    if (Array.isArray(ld)) // RDF-: a sequence, as the array of its elements
+    if (Array.isArray(ld)) // rdf-array: a sequence, as the array of its elements
       return sequenceTerm(ld.map(e => ld2RdfJsTerm(e)));
     const copy = JSON.parse(JSON.stringify(ld));
     if (!copy.value)
@@ -239,7 +239,7 @@ export function rdfJsTerm2Ld (term: RdfJsTerm): objectValue {
     if (lang)
       ret.language = lang;
     return ret;
-  case "Sequence": // RDF-: a sequence, as the array of its elements
+  case "Sequence": // rdf-array: a sequence, as the array of its elements
     return term.elements.map(e => rdfJsTerm2Ld(e));
   default:
     throw Error(`Unrecognized termType ${term.termType} ${term.value}`);

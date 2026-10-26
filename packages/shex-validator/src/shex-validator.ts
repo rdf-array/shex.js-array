@@ -1193,7 +1193,7 @@ export class ShExValidator {
           : {type: "ShapeAndResults", solutions: andPasses} as ShapeAndResults;
 
       case "Collection": {
-        // RDF-: ((shapeExpr))[min, max] -- the focus is a sequence of min to max
+        // rdf-array: ((shapeExpr))[min, max] -- the focus is a sequence of min to max
         // elements, each of which conforms to shapeExpr.  Each element is a
         // focus node of its own, like a triple constraint's value.
         const node = rdfJsTerm2Ld(focus);
@@ -2207,7 +2207,7 @@ export class ShExValidator {
       if (["iri", "bnode", "literal", "nonliteral"].indexOf(nc.nodeKind) === -1) {
         validationError(`unknown node kind '${nc.nodeKind}'`);
       }
-      if (focus.termType === "Sequence") { // RDF-: a sequence is none of the node kinds
+      if (focus.termType === "Sequence") { // rdf-array: a sequence is none of the node kinds
         validationError({type: "NodeKindMismatch", expected: nc.nodeKind, actual: "sequence"},
                         `sequence found when ${nc.nodeKind} expected`);
       } else if (focus.termType === "BlankNode") {
@@ -2290,7 +2290,7 @@ function valueInExclusions(exclusions: Array<IRIREF | IriStem | ObjectLiteral | 
 }
 
 function testValueSetValue(valueSetValueP: string | ObjectLiteral | objectValue[] | IriStem | IriStemRange | LiteralStem | LiteralStemRange | Language | LanguageStem | LanguageStemRange, value: RdfJsTerm): boolean {
-  if (Array.isArray(valueSetValueP)) { // RDF-: a sequence, as the array of its elements
+  if (Array.isArray(valueSetValueP)) { // rdf-array: a sequence, as the array of its elements
     return value.termType === "Sequence" && ShExTerm.ld2RdfJsTerm(valueSetValueP).equals(value);
   } else if (typeof valueSetValueP === "string") { // Iri
     return (value.termType === "NamedNode" && value.value === valueSetValueP);

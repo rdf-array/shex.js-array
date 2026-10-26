@@ -242,7 +242,7 @@
     return atom;	// t: 0
   }
 
-  // RDF-: ((shapeExpr))[min, max], a Collection shape expression
+  // rdf-array: ((shapeExpr))[min, max], a Collection shape expression
   function collection (shapeExpr, bounds) {
     return extend({ type: "Collection", shapeExpr: typeof shapeExpr === "string" ? shapeExpr : nonest(shapeExpr) }, bounds);
   }
@@ -441,7 +441,7 @@ COMMENT                 '#' [^\u000a\u000d]* | "/*" ([^*] | '*' ([^/] | '\\/'))*
 
 /* operator associations and precedence */
 
-/* RDF-: `((x))` is a Collection, never a doubly parenthesised x.  At
+/* rdf-array: `((x))` is a Collection, never a doubly parenthesised x.  At
    `( ( x ) . )` the parser could reduce the inner `( x )` to a parenthesised
    shape atom or shift the Collection's closing paren; ')' outranks the paren
    productions (%prec PAREN_SHAPE_EXPR), so it shifts.  `(x)` is unchanged. */
@@ -600,7 +600,7 @@ _O_QshapeExpression_E_Or_QshapeRef_E_Or_QIT_EXTERNAL_E_C:
     | IT_EXTERNAL	-> { type: "ShapeExternal" }
     ;
 
-shapeExpression: // NOT? shapeAtomNoRef shapeOr?, with the NOT spelled out (RDF-: an
+shapeExpression: // NOT? shapeAtomNoRef shapeOr?, with the NOT spelled out (rdf-array: an
                  // optional empty prefix before '(' would make `((` ambiguous for LR(1))
       shapeAtomNoRef _QshapeOr_E_Opt	-> shapeExpression1($1, $2) // t: 0, 1NOT_literalANDvs_
     | IT_NOT shapeAtomNoRef _QshapeOr_E_Opt	-> shapeExpression1({ type: "ShapeNot", "shapeExpr": nonest($2) }, $3) // t: 1NOTNOTIRI
@@ -727,8 +727,8 @@ shapeAtom:
     | litNodeConstraint	// t: 1NOT_literalANDvs_
     | shapeOrRef _QnonLitNodeConstraint_E_Opt	
         -> $2 ? shapeJunction("ShapeAnd", $1, [$2]) /* t: 1dotRef1 */ : $1 // t: @@ : 1val1vExprRefAND3
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((@<T>)), a bare reference, which a shapeExpression may not be
+    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
+    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
     | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true}) // t: NOT1dotOR2dotX3
     | '.'	-> yy.EmptyShape // t: @@
     ;
@@ -749,8 +749,8 @@ shapeAtomNoRef:
     | litNodeConstraint	// t: 1val1refvsMinusiri3
     | shapeDefinition _QnonLitNodeConstraint_E_Opt	
 	-> $2 ? shapeJunction("ShapeAnd", $1, [$2]) : $1	 // t: @@ : 0 // 1dotRef1 -- use _QnonLitNodeConstraint_E_Opt like below?
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((@<T>)), a bare reference, which a shapeExpression may not be
+    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
+    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
     | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true}) // t: NOT1dotOR2dotX3
     | '.'	-> yy.EmptyShape // t: 1NOTNOTdot
     ;
@@ -761,8 +761,8 @@ inlineShapeAtom:
     | litInlineNodeConstraint	// t: 1literal
     | inlineShapeOrRef _QnonLitInlineNodeConstraint_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1 // t: @@ : 1dotRef1
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((@<T>)), a bare reference, which a shapeExpression may not be
+    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
+    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
     | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true}) // t: 1NOTNOTIRI
     | '.'	-> yy.EmptyShape // t: 1dot
     ;
@@ -1145,12 +1145,12 @@ senseFlags:
       '^'	-> { inverse: true } // t: 1inversedot
     ;
 
-_QcollectionBounds_E_Opt: // RDF-
+_QcollectionBounds_E_Opt: // rdf-array
       	
     | collectionBounds	
     ;
 
-collectionBounds: // RDF-: [m] exactly m elements; [m, n] from m to n; [m, *] or [m,] at least m
+collectionBounds: // rdf-array: [m] exactly m elements; [m, n] from m to n; [m, *] or [m,] at least m
       '[' INTEGER ']'	-> { min: parseInt($2, 10), max: parseInt($2, 10) }
     | '[' INTEGER ',' ']'	-> { min: parseInt($2, 10), max: UNBOUNDED }
     | '[' INTEGER ',' '*' ']'	-> { min: parseInt($2, 10), max: UNBOUNDED }
@@ -1473,8 +1473,8 @@ extendsShapeAtom:
     | litInlineNodeConstraint	
     | inlineShapeOrRef _QnonLitInlineNodeConstraint_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // RDF-: ((@<T>)), a bare reference, which a shapeExpression may not be
+    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
+    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
     | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true})
     | '.'	-> yy.EmptyShape
     ;

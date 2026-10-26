@@ -15,11 +15,11 @@ describe("ShExR.shex", function () {
       .to.equal(Fs.readFileSync(SHEXR, "utf8"));
   });
 
-  // RDF-: the spec's ShExR.shex matches rdf:first/rdf:rest ladders; this fork's
-  // reads the same documents under RDF-, where `( ... )` is one sequence term, so
+  // rdf-array: the spec's ShExR.shex matches rdf:first/rdf:rest ladders; this fork's
+  // reads the same documents under rdf-array, where `( ... )` is one sequence term, so
   // every @<#...ListNPlus> ladder shape is a Collection, ((@<#X>))[n, *], and a
   // Collection shape expression is itself describable in ShExR.
-  it("should be the spec's ShExR.shex read under RDF- (tools/shexr-rdf-array.js)", function () {
+  it("should be the spec's ShExR.shex read under rdf-array (tools/shexr-rdf-array.js)", function () {
     const text = Fs.readFileSync(SHEXR, "utf8");
     expect(text).to.not.match(/rdf:first|rdf:rest|rdf:nil|List[012]Plus/);
     expect(text).to.include("sx:shapes ((@<#ShapeDecl>))[1, *] ?");

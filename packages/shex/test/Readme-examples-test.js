@@ -43,8 +43,8 @@ const Specs = [
     readme: "shex-shape-path-query",
     first: 'const Fs = require("fs");',
     expect: ["http://instance.example/project1/img1.jpg"],
-    // RDF-: shape-path-core's issue example matches an rdf:first/rdf:rest ladder
-    // shape against data written `( ... )`, one sequence term under RDF-
+    // rdf-array: shape-path-core's issue example matches an rdf:first/rdf:rest ladder
+    // shape against data written `( ... )`, one sequence term under rdf-array
     skip: "shape-path-core's example uses a list ladder shape over ( ... ) data",
   },
   { // `node -e '…'` one-liners run as shell commands from the repo root

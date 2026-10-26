@@ -206,7 +206,7 @@ export class ShExVisitor {
     return r;
   }
 
-  // RDF-: visitCollection: visit a Collection, ((shapeExpr))[min, max]
+  // rdf-array: visitCollection: visit a Collection, ((shapeExpr))[min, max]
   visitCollection (expr: Collection, ...args: any[]): any {
     this._testUnknownAttributes(expr, ["shapeExpr", "min", "max"], "Collection", this.visitCollection)
     const r: any = { type: expr.type };
@@ -308,7 +308,7 @@ export class ShExVisitor {
   }
 
   visitValues (values: valueSetValue[], ...args: any[]): any {
-    // RDF-: a value may be a sequence, written as the array of its elements
+    // rdf-array: a value may be a sequence, written as the array of its elements
     const sequence = (v: any): any => Array.isArray(v) ? v.map(sequence) : typeof v === "object" ? Object.assign({}, v) : v;
     return values.map((t: any) => {
       return Array.isArray(t) ? sequence(t)

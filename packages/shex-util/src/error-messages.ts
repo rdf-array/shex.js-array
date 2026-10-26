@@ -100,7 +100,7 @@ export function relativeIri (iri: string, base?: string): string | null {
 export function termText (term: any): string {
   if (term === undefined || term === null)
     return "?";
-  if (Array.isArray(term)) // RDF-: a sequence, as the array of its elements
+  if (Array.isArray(term)) // rdf-array: a sequence, as the array of its elements
     return "(" + term.map(termText).join(" ") + ")";
   if (typeof term === "string")
     return term.startsWith("_:") ? term : "<" + term + ">";
@@ -266,7 +266,7 @@ const leaves: {[type: string]: (err: any, ctx: ErrorContext) => ErrorDescription
     triple: ctx.triple,
     node: err.node || ctx.node,
   }),
-  // RDF-: a Collection, ((shapeExpr))[min, max], wants a sequence of the right length
+  // rdf-array: a Collection, ((shapeExpr))[min, max], wants a sequence of the right length
   SequenceExpected: (err, ctx) => ({
     text: err.message || "not a sequence",
     node: ctx.node,

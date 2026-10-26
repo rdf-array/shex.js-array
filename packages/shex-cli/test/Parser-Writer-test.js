@@ -25,7 +25,7 @@ const findPath = require("./findPath.js");
 const schemasPath = findPath("schemas");
 const jsonSchemasPath = findPath("parsedSchemas");
 const manifestFile = schemasPath + "manifest.jsonld";
-// RDF-: the fork's ShExR.shex (the spec's, with Collections for the list ladders), not the spec's
+// rdf-array: the fork's ShExR.shex (the spec's, with Collections for the list ladders), not the spec's
 const ShExRSchemaFile = require("path").join(__dirname, "../../shex-util/ShExR.shex");
 const negativeTests = [
   {path: findPath("negativeSyntax"), include: "Parse error"},

@@ -943,7 +943,7 @@ const ShExUtil = {
           });
         } else if (shapeExpr.type === "ShapeNot") {
           _walkShapeExpression(shapeExpr.shapeExpr, negated ^ 1); // !!! test negation
-        } else if (shapeExpr.type === "Collection") { // RDF-: each element, as the focus's dependency
+        } else if (shapeExpr.type === "Collection") { // rdf-array: each element, as the focus's dependency
           _walkShapeExpression(shapeExpr.shapeExpr, negated);
         } else if (shapeExpr.type === "Shape") {
           _walkShape(shapeExpr, negated);
@@ -1104,7 +1104,7 @@ const ShExUtil = {
           if (s.solution) // no .solution for <S> {}
             _dive1(s.solution);
         });
-      } else if (solns.type === "CollectionResults") { // RDF-: one result per element
+      } else if (solns.type === "CollectionResults") { // rdf-array: one result per element
         solns.solutions.forEach(_dive1);
       } else if (solns.type === "ShapeOrResults") {
         _dive1(solns.solution);
@@ -1212,7 +1212,7 @@ const ShExUtil = {
     case "Failure": // NOT1dotOR2dot_pass-empty
       return null; // !!TODO
     case "ShapeNot": // 1NOTNOTIRI_passIo1,
-    case "Collection": // RDF-
+    case "Collection": // rdf-array
       return _ShExUtil.walkVal(val.shapeExpr, cb);
     case "ShapeOrResults": // 1dotRefOR3_passShape1
       return _ShExUtil.walkVal(val.solution, cb);
@@ -1228,7 +1228,7 @@ const ShExUtil = {
           })
         return ret;
       }, {});
-    case "CollectionResults": // RDF-: bindings from every element
+    case "CollectionResults": // rdf-array: bindings from every element
     case "ShapeAndResults": // 1iriRef1_pass-iri
     case "ExtensionResults": // extends-abstract-multi-empty_pass-missingOptRef1
       return val.solutions.reduce((ret: any, exp: any) => {
@@ -1318,7 +1318,7 @@ const ShExUtil = {
       }
       function chaseList (li: any): boolean | undefined {
         if (!li) return false;
-        if (li.type === "CollectionResults") { // RDF-: a sequence value, one result per element
+        if (li.type === "CollectionResults") { // rdf-array: a sequence value, one result per element
           li.solutions.forEach((elementResult: any, i: number) => {
             let newElt = cb({object: li.node[i]});
             const t = _ShExUtil.walkVal(elementResult, cb);
@@ -1513,12 +1513,12 @@ const ShExUtil = {
       const elts = { "ShapeAnd"     : { nary: true , expr: true , prop: "shapeExprs" },
                    "ShapeOr"      : { nary: true , expr: true , prop: "shapeExprs" },
                    "ShapeNot"     : { nary: false, expr: true , prop: "shapeExpr"  },
-                   "Collection"   : { nary: false, expr: true , prop: "shapeExpr"  }, // RDF-
+                   "Collection"   : { nary: false, expr: true , prop: "shapeExpr"  }, // rdf-array
                    "ShapeRef"     : { nary: false, expr: false, prop: "reference"  },
                    "ShapeExternal": { nary: false, expr: false, prop: null         } };
       let ret = findType(v, elts, shapeDeclOrExpr);
       if (ret !== Missed) {
-        if (ret.type === "Collection") { // RDF-: its bounds
+        if (ret.type === "Collection") { // rdf-array: its bounds
           if (SX.min in v)
             ret.min = parseInt(v[SX.min][0].ldterm.value);
           if (SX.max in v) {

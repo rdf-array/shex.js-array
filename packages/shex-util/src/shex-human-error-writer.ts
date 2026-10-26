@@ -108,7 +108,7 @@ class ShExHumanErrorWriter {
     case "ShapeNotFailure":
       return ["Node " + dataTerm(val.errors.node, said, "node")
               + " expected to NOT pass " + schemaIri(val.errors.shape, said, "shape")];
-    case "CollectionFailure": // RDF-: ((shapeExpr))[min, max] over a sequence
+    case "CollectionFailure": // rdf-array: ((shapeExpr))[min, max] over a sequence
       return ["validating " + dataTerm(val.node, said, "node") + " as a collection:"]
         .concat(this.nest(val.errors, said));
     case "CollectionElementFailure":
@@ -210,7 +210,7 @@ function trim (str: string, desired: number, skip: RegExp): string {
 }
 
 function n3ify (ldterm: any): string {
-  if (Array.isArray(ldterm)) // RDF-: a sequence
+  if (Array.isArray(ldterm)) // rdf-array: a sequence
     return "(" + ldterm.map(n3ify).join(" ") + ")";
   if (typeof ldterm !== "object")
     return ldterm;

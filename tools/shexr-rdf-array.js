@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-/** RDF-: derive packages/shex-util/ShExR.shex from the spec's ShExR.shex.
+/** rdf-array: derive packages/shex-util/ShExR.shex from the spec's ShExR.shex.
  *
- * Under RDF- a list written `( ... )` is one sequence term, so the spec's
+ * Under rdf-array a list written `( ... )` is one sequence term, so the spec's
  * rdf:first/rdf:rest ladder shapes (@<#...ListNPlus>) can't match it.  This
  * rewrites every ladder reference as a Collection shape expression,
  * ((@<#X>))[n, *], drops the ladder shapes, and adds the Collection shape
@@ -16,7 +16,7 @@
 const Fs = require("fs");
 const Path = require("path");
 
-/** the spec's ShExR.shex, read under RDF- */
+/** the spec's ShExR.shex, read under rdf-array */
 function rdfMinusShExR (spec) {
   let s = spec;
   const sub = (re, repl, atLeast) => {
@@ -40,17 +40,17 @@ function rdfMinusShExR (spec) {
   sub(/<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal>\n/,
       "<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal> OR @<#Collection>\n", 1);
   sub(/(<#ShapeNot> CLOSED \{\n  a \[sx:ShapeNot\] ;\n  sx:shapeExpr @<#shapeDeclOrExpr>\n\}\n)/,
-      "$1\n# RDF-: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr\n"
+      "$1\n# rdf-array: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr\n"
       + "<#Collection> CLOSED {\n  a [sx:Collection] ;\n  sx:shapeExpr @<#shapeDeclOrExpr> ;\n  sx:min xsd:integer ? ;\n  sx:max xsd:integer ?\n}\n", 1);
   // a value-set member or an annotation object may be a sequence, as `( )` -- the
-  // spec's own ShExR.ttl writes rdf:nil that way -- is under RDF-
+  // spec's own ShExR.ttl writes rdf:nil that way -- is under rdf-array
   sub(/<#objectValue> IRI OR LITERAL( #[^\n]*)?\n/,
-      "<#objectValue> IRI OR LITERAL OR ((@<#objectValue>))$1 # RDF-: or a sequence of them\n", 1);
+      "<#objectValue> IRI OR LITERAL OR ((@<#objectValue>))$1 # rdf-array: or a sequence of them\n", 1);
   const lists = s.indexOf("# RDF Lists");
   if (lists === -1)
     throw Error("shexr-rdf-array: no '# RDF Lists' section in the spec's ShExR.shex");
   s = s.slice(0, lists)
-    + "# RDF-: there are no RDF lists.  A list written `( ... )` is one sequence term,\n"
+    + "# rdf-array: there are no RDF lists.  A list written `( ... )` is one sequence term,\n"
     + "# matched above by the Collection shape expressions ((@<#X>))[1, *] in place of\n"
     + "# the ListNPlus ladder shapes of shexTest's ShExR.shex.\n";
   if (/List[012]Plus|rdf:first|rdf:rest/.test(s))

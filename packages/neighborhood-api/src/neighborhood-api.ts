@@ -510,7 +510,7 @@ const termType2Prec: {
   'BlankNode': 1,
   'Literal': 2,
   'NamedNode': 3,
-  'Sequence': 4,                // RDF-: sequences sort after the other terms
+  'Sequence': 4,                // rdf-array: sequences sort after the other terms
 }
 
 function prec (t: RdfJsTerm) : number {

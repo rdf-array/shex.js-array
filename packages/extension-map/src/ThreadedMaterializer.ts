@@ -1110,7 +1110,7 @@ function collectQuadsAndProvenance (quadList: any[]) {
 }
 
 function n3ify (ldterm: any) { // ShExJson term -> N3id string
-  if (Array.isArray(ldterm)) // RDF-: a sequence stays an RDF/JS term; n3idTerm2RdfJs passes it through
+  if (Array.isArray(ldterm)) // rdf-array: a sequence stays an RDF/JS term; n3idTerm2RdfJs passes it through
     return ld2RdfJsTerm(ldterm);
   if (typeof ldterm !== "object" || ldterm === null)
     return ldterm;

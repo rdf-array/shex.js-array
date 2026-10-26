@@ -1,9 +1,9 @@
-# shex.js-array: ShEx over RDF- (sequences as terms)
+# shex.js-array: ShEx over rdf-array (sequences as terms)
 
-RDF- is RDF whose data model has a fifth kind of term, the **sequence**: `(1 2 3)` in Turtle-
+rdf-array is RDF whose data model has a fifth kind of term, the **sequence**: `(1 2 3)` in Turtle-array
 is one term holding its elements in order, not a ladder of `rdf:first`/`rdf:rest` blank nodes,
 and `()` is the empty sequence, not `rdf:nil`. The sibling forks are listed in the README;
-this fork of shex.js is the ShEx- side.
+this fork of shex.js is the ShEx-array side.
 
 ## The Collection shape expression
 
@@ -59,14 +59,14 @@ reader knows `sx:Collection` with `sx:min`/`sx:max`.
 ## ShExR: schemas written as RDF
 
 The spec's `ShExR.shex` matches lists as `rdf:first`/`rdf:rest` ladders
-(`@<#ShapeDeclList1Plus>` …), which under RDF- match nothing, so this fork's
+(`@<#ShapeDeclList1Plus>` …), which under rdf-array match nothing, so this fork's
 `packages/shex-util/ShExR.shex` is *derived* from the spec's by
 `tools/shexr-rdf-array.js`: every ladder reference becomes a Collection
 (`sx:shapes ((@<#ShapeDecl>))[1, *]`, `sx:shapeExprs ((@<#shapeDeclOrExpr>))[2, *]`,
 `sx:exclusion ((IRI OR @<#IriStem>))[1, *]` …), the ladder shapes go, `<#Collection>`
 joins the shapeExpr union, and `<#objectValue>` admits a sequence of object values (the
 spec's own `doc/ShExR.ttl` writes `rdf:nil` as `( )`, which is the empty sequence under
-RDF-). `packages/shex-util/test/ShExRSchema-test.js` checks the derivation against the
+rdf-array). `packages/shex-util/test/ShExRSchema-test.js` checks the derivation against the
 shexTest checkout. `ShExUtil.walkVal` reads a `CollectionResults` as one list member
 per element, so `ShExRtoShExJ` and the reduce-based reader
 (`packages/extension-reduce/examples/shexr`) read the shexTest corpus's `.ttl` schemas as

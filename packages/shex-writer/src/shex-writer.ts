@@ -211,7 +211,7 @@ class ShExCWriter {
       if (parentPrec >= 4)
         pieces.push(")");
     } else if (shapeExpr.type === "Collection") {
-      // RDF-: ((shapeExpr))[min, max]; [m] is exactly m, [m, *] at least m, no bounds any length
+      // rdf-array: ((shapeExpr))[min, max]; [m] is exactly m, [m, *] at least m, no bounds any length
       pieces.push("((");
       [].push.apply(pieces, _ShExCWriter._writeShapeExpr(shapeExpr.shapeExpr, done, forceBraces, 0) as never[]);
       pieces.push("))");

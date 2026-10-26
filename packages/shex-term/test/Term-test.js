@@ -30,7 +30,7 @@ describe("ShExTerm", function () {
     });
   });
 
-  // RDF-: a sequence term `(1 2)` converts to and from a JSON array of its elements
+  // rdf-array: a sequence term `(1 2)` converts to and from a JSON array of its elements
   describe("sequences", function () {
     const one = DF.literal("1", DF.namedNode(XSD + "integer"));
     const seq = DF.sequence([one, DF.namedNode(base + "x"), DF.sequence([])]);

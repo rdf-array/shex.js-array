@@ -116,9 +116,9 @@ if (!TEST_browser) {
     });
   });
 
-  /* The app's own examples: each RDF- schema has a SPARQL entry that shows
+  /* The app's own examples: each rdf-array schema has a SPARQL entry that shows
    * exactly which triples the data holds -- sequences as terms, not ladders */
-  describe("the RDF- schemas' SPARQL entries", function () {
+  describe("the rdf-array schemas' SPARQL entries", function () {
     this.timeout(30000);
     let dom, $, shared;
 
@@ -127,10 +127,10 @@ if (!TEST_browser) {
     });
     after(function () { if (dom) dom.window.close(); });
 
-    [{schemaLabel: "RDF-: a colour is three bytes", ofSequence: /^\(255 0 0\)$/},
-     {schemaLabel: "RDF-: a polygon is three or more points", ofSequence: /^\(\(0\.0 0\.0\) \(4\.0 0\.0\) \(0\.0 3\.0\)\)$/},
-     {schemaLabel: "RDF-: a playlist of tracks", ofSequence: /^\(<[^>]*\/t1> <[^>]*\/t2>\)$/},
-     {schemaLabel: "RDF-: a bag of anything", ofSequence: /^\(\)$/},
+    [{schemaLabel: "rdf-array: a colour is three bytes", ofSequence: /^\(255 0 0\)$/},
+     {schemaLabel: "rdf-array: a polygon is three or more points", ofSequence: /^\(\(0\.0 0\.0\) \(4\.0 0\.0\) \(0\.0 3\.0\)\)$/},
+     {schemaLabel: "rdf-array: a playlist of tracks", ofSequence: /^\(<[^>]*\/t1> <[^>]*\/t2>\)$/},
+     {schemaLabel: "rdf-array: a bag of anything", ofSequence: /^\(\)$/},
     ].forEach(({schemaLabel, ofSequence}) =>
       it(`should list every triple of "${schemaLabel}", its sequence one term`, async function () {
         const schemaLi = $("#inputSchema .manifest li")

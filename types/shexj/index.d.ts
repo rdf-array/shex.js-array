@@ -1,5 +1,5 @@
 // Conforms to <https://shex.io/shex-semantics/#shexj> and shex-test@2.2.0-alpha.1,
-// plus RDF- (https://github.com/rdf-array): the Collection shape expression over
+// plus rdf-array (https://github.com/rdf-array): the Collection shape expression over
 // sequence terms, and sequences as JSON-LD-style object values.
 
 export {}; // only export specified symbols (strict-export-declare-modifiers)
@@ -117,7 +117,7 @@ export interface ShapeAnd {
 }
 
 /**
- * RDF-: a sequence of {@link #min} to {@link #max} elements, each of which conforms to {@link #shapeExpr}.
+ * rdf-array: a sequence of {@link #min} to {@link #max} elements, each of which conforms to {@link #shapeExpr}.
  * Written `((shapeExpr))[min, max]` in ShExC: `[m]` is exactly m elements, `[m, n]` from m to n,
  * `[m, *]` (or `[m,]`) at least m; without bounds, a sequence of any length.
  */
@@ -298,7 +298,7 @@ export type valueSetValue =
 /**
  * JSON-LD representation of a URL or a Literal.
  */
-export type objectValue = IRIREF | ObjectLiteral | objectValue[]; // RDF-: an array is a sequence of its elements
+export type objectValue = IRIREF | ObjectLiteral | objectValue[]; // rdf-array: an array is a sequence of its elements
 
 /**
  * A <a href="https://www.w3.org/TR/json-ld11/#value-objects">JSON-LD Value Object</a> used to express an <a href="https://www.w3.org/TR/rdf11-concepts/#dfn-literal">RDF Literal</a>.

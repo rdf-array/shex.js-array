@@ -37,7 +37,7 @@ start=@<#Schema>
   sx:shapeExpr @<#shapeDeclOrExpr>
 }
 
-# RDF-: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr
+# rdf-array: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr
 <#Collection> CLOSED {
   a [sx:Collection] ;
   sx:shapeExpr @<#shapeDeclOrExpr> ;
@@ -103,7 +103,7 @@ start=@<#Schema>
 <#valueSetValue> @<#objectValue> OR @<#IriStem> OR @<#IriStemRange>
                                OR @<#LiteralStem> OR @<#LiteralStemRange>
                 OR @<#Language> OR @<#LanguageStem> OR @<#LanguageStemRange>
-<#objectValue> IRI OR LITERAL OR ((@<#objectValue>)) # rdf:langString breaks on Annotation.object # RDF-: or a sequence of them
+<#objectValue> IRI OR LITERAL OR ((@<#objectValue>)) # rdf:langString breaks on Annotation.object # rdf-array: or a sequence of them
 
 <#IriStem> CLOSED { a [sx:IriStem] ; sx:stem xsd:string }
 <#IriStemRange> CLOSED {
@@ -168,6 +168,6 @@ start=@<#Schema>
   sx:annotation ((@<#Annotation>))[1, *] ?
 }
 
-# RDF-: there are no RDF lists.  A list written `( ... )` is one sequence term,
+# rdf-array: there are no RDF lists.  A list written `( ... )` is one sequence term,
 # matched above by the Collection shape expressions ((@<#X>))[1, *] in place of
 # the ListNPlus ladder shapes of shexTest's ShExR.shex.

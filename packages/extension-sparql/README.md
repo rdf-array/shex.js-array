@@ -22,14 +22,14 @@ Turtle is written by [n3writer-wrapper](https://github.com/ericprud/n3writer-wra
 over N3.js's `Writer`: single-use blank nodes nested as `[ ]`, one indent step at
 every depth, multi-line literals as `"""…"""`.
 
-## RDF- (sequences as terms)
+## rdf-array (sequences as terms)
 
 This fork of shex.js reads `(255 0 0)` as **one term**, a sequence, not a ladder of
 `rdf:first`/`rdf:rest` blank nodes (see [`doc/rdf-array.md`](../../doc/rdf-array.md)).
-The query runner and the writers are the RDF- forks (`n3`, and
+The query runner and the writers are the rdf-array forks (`n3`, and
 [`n3writer-wrapper-array`](https://github.com/rdf-array/n3writer-wrapper-array)),
 so `SELECT ?s ?p ?o WHERE { ?s ?p ?o }` shows exactly the triples the data holds,
-and a sequence is one cell, `(255 0 0)`, and one `?o`.  Each of the RDF- schemas
+and a sequence is one cell, `(255 0 0)`, and one `?o`.  Each of the rdf-array schemas
 in the app's example manifest has a "every triple (SPARQL)" entry that does this.
 
 The query engine is [comunica-array](https://github.com/rdf-array/comunica-array),

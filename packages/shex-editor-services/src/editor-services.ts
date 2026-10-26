@@ -175,7 +175,7 @@ export interface MappedErrors {
 }
 
 /** LD (ShExJson) term as found in validation results */
-type LdTerm = string | {value: string, type?: string, language?: string} | LdTerm[]; // RDF-: an array is a sequence
+type LdTerm = string | {value: string, type?: string, language?: string} | LdTerm[]; // rdf-array: an array is a sequence
 
 interface TestedTriple {
   subject: LdTerm;
@@ -1009,7 +1009,7 @@ export function synthesizeLocations (text: string, schema: SchemaWithMeta, base?
     const objectOf = (node: any, predicate: string): any =>
       node ? (store.getQuads(node, F.namedNode(predicate), null, null)[0] || {}).object || null : null;
     const listOf = (head: any): any[] => {
-      if (head && head.termType === "Sequence") // RDF-: the list is one sequence term
+      if (head && head.termType === "Sequence") // rdf-array: the list is one sequence term
         return [...head.elements];
       const items: any[] = [];
       for (let at = head; at && at.value !== RDF_NIL && items.length < 10000; at = objectOf(at, RDF_REST))
@@ -1105,7 +1105,7 @@ export function synthesizeLocations (text: string, schema: SchemaWithMeta, base?
  * an RDF/JS term (for canonical-key provenance lookups and store matches). */
 function ldTermToRdfJs (ld: LdTerm): any {
   const F = RdfJs.DataFactory;
-  if (Array.isArray(ld)) // RDF-: a sequence, as the array of its elements
+  if (Array.isArray(ld)) // rdf-array: a sequence, as the array of its elements
     return (F as any).sequence(ld.map(ldTermToRdfJs));
   if (typeof ld === "object")
     return F.literal(ld.value, ld.language || (ld.type ? F.namedNode(ld.type) : undefined));
@@ -1245,7 +1245,7 @@ function rangeOfNode (parsed: ParsedTurtle, node: LdTerm, bnodes: BnodeAlignment
  * the triples it has matched. */
 export function quadRanges (parsed: ParsedTurtle, quad: any):
     Pick<PairAnchors, "subject" | "predicate" | "object" | "subjectParts" | "objectParts"> | null {
-  const ld = (t: any): LdTerm => t.termType === "Sequence" // RDF-: a sequence, as the array of its elements
+  const ld = (t: any): LdTerm => t.termType === "Sequence" // rdf-array: a sequence, as the array of its elements
     ? t.elements.map(ld)
     : t.termType === "Literal"
     ? {value: t.value,
@@ -1434,7 +1434,7 @@ function termsEqual (a: any, b: any): boolean {
 }
 
 function termStr (t: LdTerm): string {
-  if (Array.isArray(t)) // RDF-: a sequence
+  if (Array.isArray(t)) // rdf-array: a sequence
     return "(" + t.map(termStr).join(" ") + ")";
   return typeof t === "object" ? JSON.stringify(t.value) : "<" + t + ">";
 }

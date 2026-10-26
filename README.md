@@ -1,10 +1,10 @@
 <img src=".github/rdf-array-logo.png" alt="[shex.js]" width="96" align="right">
 
-# shex.js-array: shex.js for RDF-
+# shex.js-array: shex.js for rdf-array
 
 **RDF-** fork of [shex.js](https://github.com/shexjs/shex.js): ShEx over an RDF data model whose
 fifth kind of term is the **sequence**, `(1 2 3)`, in place of `rdf:first`/`rdf:rest` ladders.
-ShEx- adds one shape expression, the **Collection**, `((shapeExpr))[min, max]`:
+ShEx-array adds one shape expression, the **Collection**, `((shapeExpr))[min, max]`:
 
 ```shex
 <S> { :p ((LITERAL))[3] }          # :p's value is a sequence of exactly 3 literals
