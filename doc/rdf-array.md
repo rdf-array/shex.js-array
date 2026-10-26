@@ -81,25 +81,34 @@ builds N3.js-array from source (its `prepare` script).
 
 ## Tests
 
-`npm test` (the ungated suite) passes; `TEST_cli`/`TEST_server` were run too. What is
-skipped or expected to differ, each with its reason in the test file:
+The corpus is [shexTest-array](https://github.com/rdf-array/shexTest-array) (the `shex-test`
+devDependency, a sibling `../shexTest-array`, or `../shexTest`, where CI clones it), whose list schemas
+are Collections; `packages/shex-cli/test/findPath.js` looks there before an upstream
+`../../shexSpec/shexTest`. The shared [shexTest-contrib](https://github.com/rdf-array/shexTest-contrib)
+tests run beside it (the `shex-test-contrib` devDependency, or `SHEXTEST_CONTRIB`, or a sibling
+`../shexTest-contrib`, found by `findContribPath.js`): its Collection schemas through the
+parser/writer/ShExR tests (`Parser-Writer-test.js`), its negative syntax tests, and its validation tests
+with both engines (`ValidationContrib-test.js`).
 
-- **shexTest validation, 6 tests × 2 engines**: `1list0PlusDot`, `1list0PlusIri`,
-  `1list1PlusIri` against `In1_Ip1_list_*.ttl` — ladder shapes over data written
-  `( ... )`, one sequence term under RDF-. Their ShEx- forms are `((.))`, `((IRI))`,
-  `((IRI))[1, *]`; the `manualList` data (explicit `rdf:first` triples) still passes.
-- **shexTest ShExR fixtures, 9 files**: `1list0PlusDot.ttl`, `1list0PlusIri.ttl`,
-  `1list1PlusIri.ttl` and `doc/ShExR.ttl` write a value-set member `rdf:nil` as `( )`
-  (under RDF- the value set then holds the empty sequence, so the ShExJ differs);
-  `1val1DECIMAL.ttl`, `1val1DOUBLE.ttl`, `1val1DOUBLElowercase.ttl`, `1val1INTEGER.ttl`,
-  `1val1false.ttl` hand-write `sx:values [ rdf:first … ; rdf:rest () ]`, a ladder where
-  one sequence is expected. Fixture issues: `( rdf:nil )` would read as intended.
-- **shape-path-core's issue example** (`spquery-test`, one README example): its schema
-  describes `:discussion` with a ladder shape over `( ... )` data; the example lives in a
-  dependency.
-- **Known hazard**: a Collection reports every failing element, each with the failures of
-  every `OR` alternative, so a failing ShExR document produces a large error tree (the
-  validator's cached results are shared, so `JSON.stringify` of it can be very slow).
+`npm test` passes (7430, 9 pending); with `TEST_cli` and `TEST_server`, 7612. On the way:
+
+- **The ShExC writer dropped facets of 0** (`MININCLUSIVE 0`, `LENGTH 0`): it tested the value's
+  truthiness. Fixed in `packages/shex-writer/src/shex-writer.ts`; shexTest-contrib's `collColour` found it.
+- **The six 1list validation results** (`packages/shex-validator/test/val/1list*.val`) were re-recorded
+  (`REGEN=1`): over shexTest-array they are Collection results on sequence terms. They used to be skipped.
+- **The ShExR fixtures** that wrote `rdf:nil` as `( )` (`1list*`, `1val1*`, `doc/ShExR.ttl`) are fixed in
+  shexTest-array; their skips are gone.
+- **The ShExR reduce example** (`packages/extension-reduce/examples/shexr/shexr-actions.ttl`) gained
+  actions for `sx:Collection`, and reads 480 of the corpus's 481 ShExR graphs (`3circRefS2-IS3`, which
+  shexTest itself switches off, is the one left).
+- **`ShExRSchema-test`** derives this fork's `ShExR.shex` from the spec's; it now looks for an unconverted
+  copy (`SHEXTEST_UPSTREAM`, the corpus, `../../shexSpec/shexTest`) and is skipped without one, since
+  shexTest-array's `doc/ShExR.shex` is already converted (and converts fewer list productions than this
+  fork's, a difference to reconcile).
+- **shape-path-core's issue example** (`spquery-test`, one README example): its schema describes
+  `:discussion` with a ladder shape over `( ... )` data; the example lives in a dependency.
+- **Known hazard**: a Collection reports every failing element, each with the failures of every `OR`
+  alternative, so a failing ShExR document produces a large error tree.
 
 ## Not done
 
@@ -109,5 +118,5 @@ skipped or expected to differ, each with its reason in the test file:
 - ShExJ → ShExR writing of a Collection (`[ a sx:Collection ; sx:shapeExpr … ; sx:min … ]`) comes
   out of ShExRWriter's generic key table but is not exercised; the ShExR reader is.
 - The web app and editor services run with the forked grammars but have no Collection-specific UI.
-- `shexTest` has no RDF- tests; the Collection tests are the package-local `Collection-test.js`
-  files in shex-parser, shex-writer, shex-validator, plus shex-term's and shex-visitor's.
+- Besides the shared suites, the Collection tests are the package-local `Collection-test.js` files in
+  shex-parser, shex-writer, shex-validator, plus shex-term's and shex-visitor's.

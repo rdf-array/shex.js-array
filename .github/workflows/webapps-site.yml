@@ -57,8 +57,8 @@ jobs:
       - uses: actions/checkout@v7
       - name: clone shexTest alongside the checkout, on the ref the shex-test dependency names
         run: |
-          REF=$(sed -n 's|.*"shex-test": "github:shexSpec/shexTest#\([^"]*\)".*|\1|p' package.json)
-          git clone --depth=1 --branch="${REF:-main}" https://github.com/shexSpec/shexTest.git ../shexTest
+          REF=$(sed -n 's|.*"shex-test": "github:rdf-array/shexTest-array#\([^"]*\)".*|\1|p' package.json)
+          git clone --depth=1 --branch="${REF:-main}" https://github.com/rdf-array/shexTest-array.git ../shexTest
       - uses: actions/setup-node@v7
         with:
           node-version: 24

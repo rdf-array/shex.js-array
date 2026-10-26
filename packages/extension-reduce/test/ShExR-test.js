@@ -117,17 +117,11 @@ BASE <http://a.example/>
             + `threw: ${outcome.threw.join(" ") || "none"}`;
       // 3circRefS2-IS3 doesn't comply with ShExR.shex; its entry in
       // schemas/manifest.ttl is commented out for the same reason.
-      // RDF-: eight fixtures write rdf:nil as `( )`, which under RDF- is the empty
-      // sequence.  As a value-set member (1list*) it reads as the value set holding
-      // the empty sequence, so the ShExJ differs from the fixture's; as the rdf:rest
-      // of a hand-written rdf:first ladder (1val1*) it leaves sx:values a ladder
-      // where one sequence term is expected, so the read throws.  Fixture issues;
-      // see doc/rdf-array.md.
-      expect(outcome.differed.sort(), report)
-        .to.deep.equal(["1list0PlusDot.ttl", "1list0PlusIri.ttl", "1list1PlusIri.ttl"]);
+      // rdf-array: the corpus is shexTest-array, whose 1list* schemas are Collections and whose
+      // 1val1* fixtures write their value sets as sequences, so all of them read.
+      expect(outcome.differed.sort(), report).to.deep.equal([]);
       expect(outcome.threw.map(t => t.split(":")[0]).sort(), report)
-        .to.deep.equal(["1val1DECIMAL.ttl", "1val1DOUBLE.ttl", "1val1DOUBLElowercase.ttl",
-                        "1val1INTEGER.ttl", "1val1false.ttl", "3circRefS2-IS3.ttl"]);
+        .to.deep.equal(["3circRefS2-IS3.ttl"]);
       expect(outcome.read.length / ttls.length, report).to.be.above(0.97);
     });
   });

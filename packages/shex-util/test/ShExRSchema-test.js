@@ -24,8 +24,15 @@ describe("ShExR.shex", function () {
     expect(text).to.not.match(/rdf:first|rdf:rest|rdf:nil|List[012]Plus/);
     expect(text).to.include("sx:shapes ((@<#ShapeDecl>))[1, *] ?");
     expect(text).to.include("<#Collection> CLOSED {");
-    let spec;
-    try { spec = findPath("doc") + "ShExR.shex"; } catch (e) { this.skip(); }
+    // The spec's own ShExR.shex: shexTest-array, the corpus these tests read, carries an rdf-array
+    // version, so look for an unconverted copy (SHEXTEST_UPSTREAM, the corpus, ../../shexSpec/shexTest).
+    const candidates = [];
+    if ("SHEXTEST_UPSTREAM" in process.env)
+      candidates.push(Path.join(process.env.SHEXTEST_UPSTREAM, "doc", "ShExR.shex"));
+    try { candidates.push(findPath("doc") + "ShExR.shex"); } catch (e) { /* no corpus */ }
+    candidates.push(Path.join(__dirname, "..", "..", "..", "..", "..", "shexSpec", "shexTest", "doc", "ShExR.shex"));
+    const spec = candidates.find(f => Fs.existsSync(f) && !/sx:Collection/.test(Fs.readFileSync(f, "utf8")));
+    if (!spec) this.skip();
     const {rdfMinusShExR} = require("../../../tools/shexr-rdf-array.js");
     expect(text, "out of date: node tools/shexr-rdf-array.js && node tools/gen-shexr-schema.js")
       .to.equal(rdfMinusShExR(Fs.readFileSync(spec, "utf8")));

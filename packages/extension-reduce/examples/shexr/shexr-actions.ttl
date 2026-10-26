@@ -79,6 +79,13 @@ BASE <http://shex.io/examples/shexr-actions>
   [ sa:ref sx:ShapeExternal ;
     sa:code "{type: 'ShapeExternal'}" ] ,
 
+  # rdf-array: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr
+  [ sa:ref sx:Collection ;
+    sa:code "$$ = state.merge({type: 'Collection'}, $sx:shapeExpr, $sx:min, $sx:max)" ] ,
+  [ sa:path "@sx:Collection~sx:shapeExpr" ; sa:code "$$ = {shapeExpr: $1}" ] ,
+  [ sa:path "@sx:Collection~sx:min" ;       sa:code "$$ = {min: num($1)}" ] ,
+  [ sa:path "@sx:Collection~sx:max" ;       sa:code "$$ = {max: num($1)}" ] ,
+
   [ sa:ref sx:Shape ;
     sa:code """
       $$ = state.merge({type: 'Shape'}, $sx:extends, $sx:closed, $sx:extra,

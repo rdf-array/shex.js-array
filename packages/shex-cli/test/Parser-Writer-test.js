@@ -31,6 +31,10 @@ const negativeTests = [
   {path: findPath("negativeSyntax"), include: "Parse error"},
   {path: findPath("negativeStructure"), include: "Structural error"}
 ];
+// rdf-array: shexTest-contrib's Collection schemas and negative syntax tests run beside shexTest's
+const contribRoot = require("./findContribPath.js")();
+if (contribRoot)
+  negativeTests.push({path: contribRoot + "negativeSyntax-contrib/", include: "Parse error"});
 const illDefinedTestsPath = findPath("illDefined");
 const nsPath = "http://www.w3.org/ns/shex#";
 
@@ -42,6 +46,14 @@ const GraphSchema = loadGraphSchema();
 let schemas = require("./suiteManifest.js")(schemasPath);
 if (TESTS)
   schemas = schemas.filter(function (t) { return TESTS.indexOf(t.name) !== -1; });
+const corpora = [{schemasPath, jsonSchemasPath, schemas}];
+if (contribRoot) {
+  let contribSchemas = require("./suiteManifest.js")(contribRoot + "schemas-contrib/");
+  if (TESTS)
+    contribSchemas = contribSchemas.filter(function (t) { return TESTS.indexOf(t.name) !== -1; });
+  // the .json files sit beside the .shex ones in schemas-contrib/
+  corpora.push({schemasPath: contribRoot + "schemas-contrib/", jsonSchemasPath: contribRoot + "schemas-contrib/", schemas: contribSchemas});
+}
 
 describe("Parser-Writer-test", function () {
   // const b = function () {  };
@@ -145,7 +157,7 @@ describe("Parser-Writer-test", function () {
     });
   }
 
-  schemas.forEach(function (test) {
+  corpora.forEach(({schemasPath, jsonSchemasPath, schemas}) => schemas.forEach(function (test) {
     const schema = test.name;
     const meta = {base: null, prefixes: null}
 
@@ -173,12 +185,7 @@ describe("Parser-Writer-test", function () {
          });
 
     if (TEST_ShExR && !EARL) {
-      // RDF-: these fixtures write rdf:nil as `( )` -- as a value-set member (1list*, and the
-      // spec's own doc/ShExR.ttl) or as the rdf:rest of a hand-written rdf:first ladder
-      // (1val1DECIMAL etc.) -- and under RDF- `( )` is the empty sequence, not rdf:nil, while
-      // sx:values must be one sequence.  Fixture issues; see doc/rdf-array.md.
-      const nilAsEmptyList = /\/(1list[01]Plus(Dot|Iri)|1val1(DECIMAL|DOUBLE|DOUBLElowercase|INTEGER|false)|ShExR)\.ttl$/.test(shexRFile);
-      (nilAsEmptyList ? it.skip : it)(EARL
+      it(EARL
          ? 'schemas/manifest\#' + test.name
          : "should correctly parse ShExR schema '" + shexRFile +
          "' as '" + jsonSchemaFile + "'." , function () {
@@ -251,7 +258,7 @@ describe("Parser-Writer-test", function () {
       e2.stack = "Error in (" + jsonSchemaFile + "): " + e.stack;
       throw e2;
     }
-  });
+  }));
 
 
   // negative syntax and structure tests

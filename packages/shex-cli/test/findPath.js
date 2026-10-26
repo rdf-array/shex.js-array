@@ -9,11 +9,16 @@ var path = require("path");
 // (which maps the standard dirs) and by a direct subdirectory (which also
 // resolves the `*-contrib` dirs the module doesn't export).
 var ROOT = path.resolve(__dirname, "../../..");
+// rdf-array: the corpus is shexTest-array (Collection shapes where shexTest has ladder shapes): a
+// sibling ../shexTest-array comes first, then ../shexTest (where CI clones shexTest-array), then the
+// shex-test devDependency (also shexTest-array); the upstream ../../shexSpec/shexTest layout comes
+// last, after the dependency, so that a checkout of the original does not shadow the fork.
 var CANDIDATES = ("TESTSDIR" in process.env ? [process.env.TESTSDIR] : []).concat([
+  path.resolve(ROOT, "../shexTest-array"),
   path.resolve(ROOT, "../shexTest"),
   path.resolve(ROOT, "../../shexTest"),
-  path.resolve(ROOT, "../../shexSpec/shexTest"),
 ]);
+var LAST_RESORT = path.resolve(ROOT, "../../shexSpec/shexTest");
 
 module.exports = function (dirName) {
   for (var i = 0; i < CANDIDATES.length; ++i) {
@@ -40,12 +45,16 @@ module.exports = function (dirName) {
   }
 
   try {
-    // finally, the npm-installed devDependency
+    // then the npm-installed devDependency
     var fromPackage = require("shex-test")[dirName];
     if (fromPackage !== undefined) {
       return fromPackage;
     }
   } catch (e) {
+    var fromLastResort = path.join(LAST_RESORT, dirName) + "/";
+    if (fs.existsSync(fromLastResort)) {
+      return fromLastResort;
+    }
     throw new Error(dirName + " not found in ../shexTest, ../../shexTest or ../../shexSpec/shexTest (from the repo root), and shex-test not installed. Either 'npm install shex-test' or '(cd .. && git clone git@github.com:shexSpec/shexTest.git)' .", {cause: e});
   }
   throw new Error(dirName + " not found in any shexTest checkout.");

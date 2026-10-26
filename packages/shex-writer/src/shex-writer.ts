@@ -481,7 +481,8 @@ class ShExCWriter {
       'mininclusive', 'minexclusive', 'maxinclusive', 'maxexclusive',
       'totaldigits', 'fractiondigits'
     ] as const).forEach(function (a) {
-      if (v[a])
+      // a facet of 0 (MININCLUSIVE 0, LENGTH 0) is still a facet
+      if (v[a] !== undefined && v[a] !== null)
         pieces.push(" ", a, " ", v[a]!);
     });
     return pieces;

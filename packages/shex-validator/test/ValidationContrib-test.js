@@ -30,8 +30,14 @@ const regexModules = [
 
 let contribPath = null;
 try { contribPath = findPath("validation-contrib"); } catch (e) { /* no contrib corpus */ }
+// rdf-array: shexTest-contrib's validation-contrib (Collection shape expressions), as a second corpus
+const arrayContribRoot = require("../../shex-cli/test/findContribPath.js")();
+const corpora = [["shexTest", contribPath]];
+if (arrayContribRoot)
+  corpora.push(["shexTest-contrib", arrayContribRoot + "validation-contrib/"]);
 
-describe("A ShEx validator (contrib)", function () {
+corpora.forEach(([corpus, contribPath]) =>
+describe(`A ShEx validator (contrib, ${corpus})`, function () {
   // describe.skip would still run this body to collect its (pending) tests,
   // so the corpus check has to be inside it: one pending test says why.
   if (contribPath === null) {
@@ -58,7 +64,7 @@ describe("A ShEx validator (contrib)", function () {
       });
     });
   });
-});
+}));
 
 function loadSchema (file) {
   const text = fs.readFileSync(file, "utf8");
