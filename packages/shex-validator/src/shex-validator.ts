@@ -30,8 +30,8 @@ import {
   ShapeAndFailure,
   shapeExprTest,
   ShapeNotFailure,
-  CollectionResults,
-  CollectionFailure,
+  ListShapeResults,
+  ListShapeFailure,
   ShapeNotResults,
   ShapeAndResults,
   ShapeTest,
@@ -663,6 +663,215 @@ function driveSync<T> (task: Resumable<T>, db: NeighborhoodDb): T {
   return step.value;
 }
 
+/* rdf-array: a ListShape's expression as an automaton over member tests.
+ *
+ * The expression is a regular expression whose atoms are shape expressions,
+ * so it compiles to an NFA whose transitions each validate one member of the
+ * sequence against one Member's shapeExpr.  The sequence is run through it
+ * one member at a time, as a set of states, so the work is linear in the
+ * sequence and in the automaton however the expression nests, and a member
+ * is validated against a given Member at most once.  A back-pointer per
+ * reached state recovers which Member matched each member, which is what
+ * ListShapeResults reports, in order.  A counted repetition unrolls into
+ * that many copies; `-1` is a loop.
+ */
+type ListState = number;
+interface ListStep { member: ShExJ.Member, to: ListState }
+interface ListBack { from: ListState, step?: ListStep }   // how a state was reached: by a member test, or by ε from `from`
+
+class ListMatcher {
+  private eps: ListState[][] = [];
+  private steps: ListStep[][] = [];
+  private start: ListState;
+  private end: ListState;
+  private tests = new Map<ShExJ.Member, Map<number, shapeExprTest>>();
+  private deadAt = -1;          // the position where no state survived, or the sequence's length when it ended early
+  private tried: ShExJ.Member[] = [];   // the Members whose tests failed there
+
+  constructor (private validator: ShExValidator, private expr: ShExJ.listExpr, private members: readonly RdfJsTerm[], private ctx: ShapeExprValidationContext) {
+    const frag = this.compile(expr);
+    this.start = frag.start;
+    this.end = frag.end;
+  }
+
+  private state (): ListState { this.eps.push([]); this.steps.push([]); return this.eps.length - 1; }
+
+  /** e as a fragment with one entry and one exit, repeated min to max times */
+  private compile (e: ShExJ.listExpr): {start: ListState, end: ListState} {
+    const min = e.min ?? 1, max = e.max ?? 1;    // -1: unbounded
+    const start = this.state();
+    let cur = start;
+    for (let n = 0; n < min; ++n)
+      cur = this.once(e, cur);
+    if (max === -1) {                      // then any number more: a loop
+      const loop = this.once(e, cur);
+      this.eps[loop].push(cur);
+    } else {                               // then up to max-min more, each skippable
+      const end = this.state();
+      for (let n = min; n < max; ++n) {
+        this.eps[cur].push(end);
+        cur = this.once(e, cur);
+      }
+      this.eps[cur].push(end);
+      cur = end;
+    }
+    return {start, end: cur};
+  }
+
+  /** one occurrence of e, entered at `from`; returns its exit state */
+  private once (e: ShExJ.listExpr, from: ListState): ListState {
+    switch (e.type) {
+    case "Member": {
+      const to = this.state();
+      this.steps[from].push({member: e, to});
+      return to;
+    }
+    case "ListEachOf":
+      return e.expressions.reduce((cur, sub) => {
+        const frag = this.compile(sub);
+        this.eps[cur].push(frag.start);
+        return frag.end;
+      }, from);
+    case "ListOneOf": {
+      const end = this.state();
+      e.expressions.forEach(sub => {
+        const frag = this.compile(sub);
+        this.eps[from].push(frag.start);
+        this.eps[frag.end].push(end);
+      });
+      return end;
+    }
+    default:
+      throw Error("expected a Member, ListEachOf or ListOneOf, got " + JSON.stringify(e));
+    }
+  }
+
+  /** the states reachable by ε from `seeds`, each with how it was first reached */
+  private closure (seeds: Map<ListState, ListBack>): Map<ListState, ListBack> {
+    const queue = [...seeds.keys()];
+    while (queue.length) {
+      const s = queue.shift()!;
+      for (const t of this.eps[s])
+        if (!seeds.has(t)) {
+          seeds.set(t, {from: s});
+          queue.push(t);
+        }
+    }
+    return seeds;
+  }
+
+  /** member i against m's shapeExpr, once */
+  private * test (i: number, m: ShExJ.Member): Resumable<shapeExprTest> {
+    let byIndex = this.tests.get(m);
+    if (!byIndex)
+      this.tests.set(m, byIndex = new Map());
+    let result = byIndex.get(i);
+    if (result === undefined) {
+      result = yield* this.validator.resumeShapeExpr(this.members[i], m.shapeExpr, this.ctx);
+      byIndex.set(i, result);
+    }
+    return result;
+  }
+
+  /** each member's result, in order, or null when the sequence does not match */
+  * match (): Resumable<shapeExprTest[] | null> {
+    const levels: Map<ListState, ListBack>[] = [this.closure(new Map([[this.start, {from: -1}]]))];
+    for (let i = 0; i < this.members.length; ++i) {
+      const next = new Map<ListState, ListBack>();
+      const tried: ShExJ.Member[] = [];
+      for (const s of levels[i].keys())
+        for (const step of this.steps[s]) {
+          if (next.has(step.to))
+            continue;
+          if ("errors" in (yield* this.test(i, step.member)))
+            tried.push(step.member);
+          else
+            next.set(step.to, {from: s, step});
+        }
+      if (next.size === 0) {
+        this.deadAt = i;
+        this.tried = tried;
+        return null;
+      }
+      levels.push(this.closure(next));
+    }
+    const last = levels[this.members.length];
+    if (!last.has(this.end)) {
+      this.deadAt = this.members.length;
+      return null;
+    }
+    // back from the accepting state: a test transition consumed one member
+    const results: shapeExprTest[] = new Array(this.members.length);
+    for (let i = this.members.length, s = this.end; i > 0 || s !== this.start;) {
+      const back = levels[i].get(s)!;
+      if (back.step) {
+        --i;
+        results[i] = this.tests.get(back.step.member)!.get(i)!;
+      }
+      s = back.from;
+    }
+    return results;
+  }
+
+  /** why match() returned null: the members that conform to none of the
+   * Members tried on them, or, when every member tried passed something, the
+   * count or arrangement that the expression does not accept */
+  * explain (): Resumable<object[]> {
+    const n = this.members.length;
+    const all = this.allMembers(this.expr);
+    const failures: object[] = [];
+    if (this.tried.length > 0) {
+      failures.push(yield* this.memberFailure(this.deadAt, this.tried));
+      // one Member alone (`LIST card x`) says what every member must be, so
+      // say which of the rest fall short of it as well
+      if (all.length === 1)
+        for (let i = this.deadAt + 1; i < n; ++i)
+          if ("errors" in (yield* this.test(i, all[0])))
+            failures.push(yield* this.memberFailure(i, all));
+      return failures;
+    }
+    const [min, max] = this.lengthBounds(this.expr);
+    const count = `sequence of ${n} member${n === 1 ? "" : "s"}`;
+    const message = n < min || (max !== -1 && n > max)
+      ? `${count} where ${max === min ? `${min}` : max === -1 ? `at least ${min}` : `${min} to ${max}`} expected`
+      : this.deadAt < n
+      ? `${count} where the list expression matches only the first ${this.deadAt}`
+      : `${count} where the list expression wants more`;
+    return [{type: "ListLengthViolation", min, max, length: n, message}];
+  }
+
+  private * memberFailure (i: number, tried: ShExJ.Member[]): Resumable<object> {
+    const errors: shapeExprTest[] = [];
+    for (const m of tried)
+      errors.push(yield* this.test(i, m));
+    return {type: "ListMemberFailure", index: i, errors};
+  }
+
+  private allMembers (e: ShExJ.listExpr): ShExJ.Member[] {
+    return e.type === "Member" ? [e] : e.expressions.reduce((ret: ShExJ.Member[], sub) => ret.concat(this.allMembers(sub)), []);
+  }
+
+  /** the fewest and the most members e matches (-1: unbounded) */
+  private lengthBounds (e: ShExJ.listExpr): [number, number] {
+    const min = e.min ?? 1, max = e.max ?? 1;
+    let lo = 1, hi = 1;
+    if (e.type === "ListEachOf") {
+      lo = 0; hi = 0;
+      for (const [l, h] of e.expressions.map(sub => this.lengthBounds(sub))) {
+        lo += l;
+        hi = hi === -1 || h === -1 ? -1 : hi + h;
+      }
+    } else if (e.type === "ListOneOf") {
+      lo = Infinity; hi = 0;
+      for (const [l, h] of e.expressions.map(sub => this.lengthBounds(sub))) {
+        lo = Math.min(lo, l);
+        hi = hi === -1 || h === -1 ? -1 : Math.max(hi, h);
+      }
+    }
+    return [lo * min, hi === 0 ? 0 : hi === -1 || max === -1 ? -1 : hi * max];
+  }
+}
+
 export class ShExValidator {
   public static readonly Start = NeighborhoodStart;
   public static readonly InterfaceOptions = InterfaceOptions;
@@ -1192,40 +1401,25 @@ export class ShExValidator {
           ? {type: "ShapeAndFailure", errors: andErrors} as ShapeAndFailure
           : {type: "ShapeAndResults", solutions: andPasses} as ShapeAndResults;
 
-      case "Collection": {
-        // rdf-array: ((shapeExpr))[min, max] -- the focus is a sequence of min to max
-        // elements, each of which conforms to shapeExpr.  Each element is a
-        // focus node of its own, like a triple constraint's value.
+      case "ListShape": {
+        // rdf-array: LIST ( … ) -- the focus is a sequence whose members, in
+        // order, match a regular expression over shape expressions.  Each
+        // member is a focus node of its own, like a triple constraint's value.
         const node = rdfJsTerm2Ld(focus);
         if (focus.termType !== "Sequence")
-          return {type: "CollectionFailure", node, errors: [{
+          return {type: "ListShapeFailure", node, errors: [{
             type: "SequenceExpected", actual: focus.termType,
             message: `${ShExTerm.rdfJsTerm2Turtle(focus)} is not a sequence`,
-          }]} as unknown as CollectionFailure;
-        const elements = focus.elements;
-        const min = shapeExpr.min ?? 0, max = shapeExpr.max ?? -1; // -1: unbounded
-        if (elements.length < min || (max !== -1 && elements.length > max))
-          return {type: "CollectionFailure", node, errors: [{
-            type: "CollectionLengthViolation", min, max, length: elements.length,
-            message: `sequence of ${elements.length} element${elements.length === 1 ? "" : "s"} where `
-              + (max === min ? `${min}` : max === -1 ? `at least ${min}` : `${min} to ${max}`) + " expected",
-          }]} as unknown as CollectionFailure;
-        const elementCtx = ctx.followTripleConstraint();
-        const solutions: shapeExprTest[] = [], elementErrors: object[] = [];
-        for (let i = 0; i < elements.length; ++i) {
-          const sub = yield* this.resumeShapeExpr(elements[i], shapeExpr.shapeExpr, elementCtx);
-          if ("errors" in sub)
-            elementErrors.push({type: "CollectionElementFailure", index: i, errors: sub});
-          else
-            solutions.push(sub);
-        }
-        return elementErrors.length > 0
-          ? {type: "CollectionFailure", node, errors: elementErrors} as unknown as CollectionFailure
-          : {type: "CollectionResults", node, solutions} as CollectionResults;
+          }]} as unknown as ListShapeFailure;
+        const matcher = new ListMatcher(this, shapeExpr.expression, focus.elements, ctx.followTripleConstraint());
+        const solutions = yield* matcher.match();
+        return solutions === null
+          ? {type: "ListShapeFailure", node, errors: yield* matcher.explain()} as unknown as ListShapeFailure
+          : {type: "ListShapeResults", node, solutions} as ListShapeResults;
       }
 
       default:
-        throw Error("expected one of Shape{Ref,And,Or,Collection} or NodeConstraint, got " + JSON.stringify(shapeExpr));
+        throw Error("expected one of Shape{Ref,And,Or,List} or NodeConstraint, got " + JSON.stringify(shapeExpr));
     }
   }
 

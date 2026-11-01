@@ -108,11 +108,11 @@ class ShExHumanErrorWriter {
     case "ShapeNotFailure":
       return ["Node " + dataTerm(val.errors.node, said, "node")
               + " expected to NOT pass " + schemaIri(val.errors.shape, said, "shape")];
-    case "CollectionFailure": // rdf-array: ((shapeExpr))[min, max] over a sequence
-      return ["validating " + dataTerm(val.node, said, "node") + " as a collection:"]
+    case "ListShapeFailure": // rdf-array: LIST ( … ) over a sequence
+      return ["validating " + dataTerm(val.node, said, "node") + " as a list:"]
         .concat(this.nest(val.errors, said));
-    case "CollectionElementFailure":
-      return ["element " + val.index + ":"].concat(this.nest(val.errors, said));
+    case "ListMemberFailure":
+      return ["member " + val.index + ":"].concat(this.nest(val.errors, said));
     case "SemActFailure":
       // an action that explains itself (extension-path-assert) says what each
       // part evaluated to, one line each, under its message

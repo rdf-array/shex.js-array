@@ -30,7 +30,7 @@ const regexModules = [
 
 let contribPath = null;
 try { contribPath = findPath("validation-contrib"); } catch (e) { /* no contrib corpus */ }
-// rdf-array: shexTest-contrib's validation-contrib (Collection shape expressions), as a second corpus
+// rdf-array: shexTest-contrib's validation-contrib (LIST shape expressions), as a second corpus
 const arrayContribRoot = require("../../shex-cli/test/findContribPath.js")();
 const corpora = [["shexTest", contribPath]];
 if (arrayContribRoot)

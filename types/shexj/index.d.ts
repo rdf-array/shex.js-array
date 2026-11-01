@@ -1,5 +1,5 @@
 // Conforms to <https://shex.io/shex-semantics/#shexj> and shex-test@2.2.0-alpha.1,
-// plus rdf-array (https://github.com/rdf-array): the Collection shape expression over
+// plus rdf-array (https://github.com/rdf-array): the LIST shape expression over
 // sequence terms, and sequences as JSON-LD-style object values.
 
 export {}; // only export specified symbols (strict-export-declare-modifiers)
@@ -78,7 +78,7 @@ export interface ShapeDecl {
  * Union of shape expression types.
  * @see <a href="http://shex.io/shex-semantics/#dfn-shapeexpr">ShEx shapeExpr definition</a>
  */
-export type shapeExpr = ShapeOr | ShapeAnd | ShapeNot | NodeConstraint | Shape | ShapeExternal | Collection;
+export type shapeExpr = ShapeOr | ShapeAnd | ShapeNot | NodeConstraint | Shape | ShapeExternal | ListShape;
 
 /**
  * Union of shapeExpr and shapeDeclRef.
@@ -117,26 +117,81 @@ export interface ShapeAnd {
 }
 
 /**
- * rdf-array: a sequence of {@link #min} to {@link #max} elements, each of which conforms to {@link #shapeExpr}.
- * Written `((shapeExpr))[min, max]` in ShExC: `[m]` is exactly m elements, `[m, n]` from m to n,
- * `[m, *]` (or `[m,]`) at least m; without bounds, a sequence of any length.
+ * rdf-array: a sequence whose members, in order, match {@link #expression}, a regular expression over
+ * shape expressions.  Written `LIST ( regex )` in ShExC, where `;` concatenates, `|` chooses, `( )`
+ * groups and a cardinality repeats, as in a triple expression; `LIST card x` is short for `LIST ( x card )`.
+ * @see <a href="https://github.com/rdf-array/rdf-array/blob/main/docs/array-syntax.md">array-syntax.md §2, §7</a>
  */
-export interface Collection {
+export interface ListShape {
     /**
-     * Mandatory type "Collection".
+     * Mandatory type "ListShape".
      */
-    type: "Collection";
+    type: "ListShape";
     /**
-     * The {@link shapeExprOrRef} each element of the sequence must conform to.
+     * The regular expression the sequence's members must match.
+     */
+    expression: listExpr;
+}
+
+/**
+ * rdf-array: the regular expression of a {@link ListShape}: a member, a concatenation or a choice,
+ * each with the `min`/`max` of a triple expression (absent: 1; `-1`: unbounded).
+ */
+export type listExpr = Member | ListEachOf | ListOneOf;
+
+/**
+ * rdf-array: {@link #min} to {@link #max} consecutive members, each conforming to {@link #shapeExpr}.
+ */
+export interface Member {
+    /**
+     * Mandatory type "Member".
+     */
+    type: "Member";
+    /**
+     * The {@link shapeExprOrRef} each of these members must conform to.
      */
     shapeExpr: shapeExprOrRef;
     /**
-     * Least number of elements (default 0).
+     * Least number of repetitions (default 1).
      */
     min?: INTEGER | undefined;
     /**
-     * Greatest number of elements (default -1, unbounded).
+     * Greatest number of repetitions (default 1; -1 is unbounded).
      */
+    max?: INTEGER | undefined;
+}
+
+/**
+ * rdf-array: {@link #expressions} matched one after another, in order (unlike an {@link EachOf},
+ * whose triples have no order), {@link #min} to {@link #max} times.
+ */
+export interface ListEachOf {
+    /**
+     * Mandatory type "ListEachOf".
+     */
+    type: "ListEachOf";
+    /**
+     * The {@link listExpr}s, in order (one or more: a parenthesised group with two cardinalities,
+     * `( x {2} ) {3}`, is a ListEachOf of one).
+     */
+    expressions: listExpr[];
+    min?: INTEGER | undefined;
+    max?: INTEGER | undefined;
+}
+
+/**
+ * rdf-array: one of {@link #expressions}, {@link #min} to {@link #max} times.
+ */
+export interface ListOneOf {
+    /**
+     * Mandatory type "ListOneOf".
+     */
+    type: "ListOneOf";
+    /**
+     * Two or more {@link listExpr}s to choose among.
+     */
+    expressions: listExpr[]; // {2,}
+    min?: INTEGER | undefined;
     max?: INTEGER | undefined;
 }
 

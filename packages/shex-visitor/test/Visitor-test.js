@@ -24,13 +24,21 @@ describe("ShExVisitor", function () {
     expect(() => v.runtimeError(Error("passed through"))).to.throw(/passed through/);
   });
 
-  it("copies a Collection, ((shapeExpr))[min, max] (rdf-array)", function () {
+  it("copies a ListShape, LIST ( … ), and its list expression (rdf-array)", function () {
     const v = new ShExVisitor();
-    const coll = {type: "Collection", shapeExpr: {type: "NodeConstraint", nodeKind: "iri"}, min: 1, max: -1};
-    expect(v.visitShapeExpr(coll)).to.deep.equal(coll);
-    expect(v.visitShapeExpr({type: "Collection", shapeExpr: "http://a.example/T"})).to.deep.equal({type: "Collection", shapeExpr: "http://a.example/T"});
-    expect(v.visitShapeExpr({type: "ShapeNot", shapeExpr: coll})).to.deep.equal({type: "ShapeNot", shapeExpr: coll});
-    expect(() => v.visitShapeExpr({type: "Collection", shapeExpr: "http://a.example/T", bogus: 1})).to.throw(/unknown property: "bogus"/);
+    const list = {type: "ListShape", expression: {type: "Member", shapeExpr: {type: "NodeConstraint", nodeKind: "iri"}, min: 1, max: -1}};
+    expect(v.visitShapeExpr(list)).to.deep.equal(list);
+    expect(v.visitShapeExpr({type: "ListShape", expression: {type: "Member", shapeExpr: "http://a.example/T"}}))
+      .to.deep.equal({type: "ListShape", expression: {type: "Member", shapeExpr: "http://a.example/T"}});
+    const regex = {type: "ListShape", expression: {type: "ListOneOf", expressions: [
+      {type: "ListEachOf", expressions: [{type: "Member", shapeExpr: "http://a.example/A"}, {type: "Member", shapeExpr: "http://a.example/B", min: 0, max: 1}], min: 2, max: 2},
+      {type: "Member", shapeExpr: list},
+    ], min: 0, max: -1}};
+    expect(v.visitShapeExpr(regex), "nested groups, cardinalities and a LIST in a member").to.deep.equal(regex);
+    expect(v.visitShapeExpr({type: "ShapeNot", shapeExpr: list})).to.deep.equal({type: "ShapeNot", shapeExpr: list});
+    expect(() => v.visitShapeExpr({type: "ListShape", expression: {type: "Member", shapeExpr: "http://a.example/T"}, bogus: 1})).to.throw(/unknown property: "bogus"/);
+    expect(() => v.visitShapeExpr({type: "ListShape", expression: {type: "Member", shapeExpr: "http://a.example/T", bogus: 1}})).to.throw(/unknown property: "bogus"/);
+    expect(() => v.visitShapeExpr({type: "ListShape", expression: {type: "Bogus"}})).to.throw(/unexpected list expression type: Bogus/);
   });
 
   it("checks stems, stem ranges and exclusions", function () {

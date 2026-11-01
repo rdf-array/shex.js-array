@@ -16,7 +16,7 @@ const SX: Namespace = { _namespace: "http://www.w3.org/ns/shex#" };
 ["Schema", "@context", "imports", "startActs", "start", "shapes",
  "ShapeDecl", "ShapeOr", "ShapeAnd", "shapeExprs", "nodeKind",
  "NodeConstraint", "iri", "bnode", "nonliteral", "literal", "datatype", "length", "minlength", "maxlength", "pattern", "flags", "mininclusive", "minexclusive", "maxinclusive", "maxexclusive", "totaldigits", "fractiondigits", "values",
- "ShapeNot", "shapeExpr", "Collection",
+ "ShapeNot", "shapeExpr", "ListShape", "Member", "ListEachOf", "ListOneOf", // rdf-array
  "Shape", "abstract", "closed", "extra", "expression", "extends", "restricts", "semActs",
  "ShapeRef", "reference", "ShapeExternal",
  "EachOf", "OneOf", "expressions", "min", "max", "annotation",
@@ -168,6 +168,16 @@ class SchemaStructureValidator extends ShExVisitor {
     const ret = super.visitTripleConstraint(expr, ...args);
     this.inTE = lastInTE;
     this.currentNegated = lastNegated;
+    return ret;
+  };
+
+  // rdf-array: a list's member is another node, as a triple constraint's value is, so a reference
+  // from inside a LIST is not a same-node dependency: LIST ( xsd:string ; LIST ( @<Tree> * ) ) is fine.
+  visitListShape (expr: any, ...args: any[]): any {
+    const lastInTE = this.inTE;
+    this.inTE = true;
+    const ret = (super.visitListShape as any)(expr, ...args);
+    this.inTE = lastInTE;
     return ret;
   };
 
@@ -927,6 +937,13 @@ const ShExUtil = {
     return valueExpr // throw Error('no value type for ' + JSON.stringify(valueExpr))
   },
 
+  /** rdf-array: the Members of a ListShape's expression, in order: every shape
+   * expression a LIST ( … ) tests a member against. */
+  listMembers: function (expr: any): any[] {
+    return expr.type === "Member" ? [expr]
+      : (expr.expressions || []).reduce((ret: any[], e: any) => ret.concat(ShExUtil.listMembers(e)), []);
+  },
+
   /** getDependencies: find which shappes depend on other shapes by inheritance
    * or inclusion.
    * TODO: rewrite in terms of Visitor.
@@ -943,8 +960,8 @@ const ShExUtil = {
           });
         } else if (shapeExpr.type === "ShapeNot") {
           _walkShapeExpression(shapeExpr.shapeExpr, negated ^ 1); // !!! test negation
-        } else if (shapeExpr.type === "Collection") { // rdf-array: each element, as the focus's dependency
-          _walkShapeExpression(shapeExpr.shapeExpr, negated);
+        } else if (shapeExpr.type === "ListShape") { // rdf-array: each member's shape, as the focus's dependency
+          ShExUtil.listMembers(shapeExpr.expression).forEach((m: any) => _walkShapeExpression(m.shapeExpr, negated));
         } else if (shapeExpr.type === "Shape") {
           _walkShape(shapeExpr, negated);
         } else if (shapeExpr.type === "NodeConstraint") {
@@ -1104,7 +1121,7 @@ const ShExUtil = {
           if (s.solution) // no .solution for <S> {}
             _dive1(s.solution);
         });
-      } else if (solns.type === "CollectionResults") { // rdf-array: one result per element
+      } else if (solns.type === "ListShapeResults") { // rdf-array: one result per member
         solns.solutions.forEach(_dive1);
       } else if (solns.type === "ShapeOrResults") {
         _dive1(solns.solution);
@@ -1212,8 +1229,19 @@ const ShExUtil = {
     case "Failure": // NOT1dotOR2dot_pass-empty
       return null; // !!TODO
     case "ShapeNot": // 1NOTNOTIRI_passIo1,
-    case "Collection": // rdf-array
       return _ShExUtil.walkVal(val.shapeExpr, cb);
+    case "ListShape": // rdf-array: bindings from every member's shape
+      return _ShExUtil.listMembers(val.expression).reduce((ret: any, m: any) => {
+        const n = _ShExUtil.walkVal(m.shapeExpr, cb);
+        if (n)
+          Object.keys(n).forEach(k => {
+            if (k in ret)
+              ret[k] = ret[k].concat(n[k]);
+            else
+              ret[k] = n[k];
+          })
+        return ret;
+      }, {});
     case "ShapeOrResults": // 1dotRefOR3_passShape1
       return _ShExUtil.walkVal(val.solution, cb);
     case "ShapeOr": // 1NOT_literalORvs__passIo1
@@ -1228,7 +1256,7 @@ const ShExUtil = {
           })
         return ret;
       }, {});
-    case "CollectionResults": // rdf-array: bindings from every element
+    case "ListShapeResults": // rdf-array: bindings from every member
     case "ShapeAndResults": // 1iriRef1_pass-iri
     case "ExtensionResults": // extends-abstract-multi-empty_pass-missingOptRef1
       return val.solutions.reduce((ret: any, exp: any) => {
@@ -1318,7 +1346,7 @@ const ShExUtil = {
       }
       function chaseList (li: any): boolean | undefined {
         if (!li) return false;
-        if (li.type === "CollectionResults") { // rdf-array: a sequence value, one result per element
+        if (li.type === "ListShapeResults") { // rdf-array: a sequence value, one result per member
           li.solutions.forEach((elementResult: any, i: number) => {
             let newElt = cb({object: li.node[i]});
             const t = _ShExUtil.walkVal(elementResult, cb);
@@ -1513,24 +1541,15 @@ const ShExUtil = {
       const elts = { "ShapeAnd"     : { nary: true , expr: true , prop: "shapeExprs" },
                    "ShapeOr"      : { nary: true , expr: true , prop: "shapeExprs" },
                    "ShapeNot"     : { nary: false, expr: true , prop: "shapeExpr"  },
-                   "Collection"   : { nary: false, expr: true , prop: "shapeExpr"  }, // rdf-array
                    "ShapeRef"     : { nary: false, expr: false, prop: "reference"  },
                    "ShapeExternal": { nary: false, expr: false, prop: null         } };
       let ret = findType(v, elts, shapeDeclOrExpr);
-      if (ret !== Missed) {
-        if (ret.type === "Collection") { // rdf-array: its bounds
-          if (SX.min in v)
-            ret.min = parseInt(v[SX.min][0].ldterm.value);
-          if (SX.max in v) {
-            ret.max = parseInt(v[SX.max][0].ldterm.value);
-            if (isNaN(ret.max))
-              ret.max = UNBOUNDED;
-          }
-        }
+      if (ret !== Missed)
         return ret;
-      }
 
       const t = v[RDF.type][0].ldterm;
+      if (t === SX.ListShape) // rdf-array: sx:ListShape with sx:expression, a list expression
+        return { type: "ListShape", expression: listExpr(v[SX.expression][0]) };
       if (t === SX.ShapeDecl) {
         const ret: any = { type: "ShapeDecl" };
         ["abstract"].forEach(a => {
@@ -1663,6 +1682,30 @@ const ShExUtil = {
       } else {
         return expectString ? v.ldterm.value : v.ldterm;
       }
+    }
+
+    /* rdf-array: a ListShape's expression: sx:Member with sx:shapeExpr, or
+     * sx:ListEachOf/sx:ListOneOf with sx:expressions, each with sx:min/sx:max. */
+    function listExpr (x: any): any {
+      const v = x.nested;
+      const t = v[RDF.type][0].ldterm;
+      let ret: any;
+      if (t === SX.Member) {
+        const se = v[SX.shapeExpr][0];
+        ret = { type: "Member", shapeExpr: "nested" in se ? extend({ id: se.ldterm }, shapeDeclOrExpr(se.nested)) : se.ldterm };
+      } else if (t === SX.ListEachOf || t === SX.ListOneOf) {
+        ret = { type: t.substr(SX._namespace.length), expressions: v[SX.expressions].map(listExpr) };
+      } else {
+        throw Error("unknown list expression type in " + JSON.stringify(v));
+      }
+      if (SX.min in v)
+        ret.min = parseInt(v[SX.min][0].ldterm.value);
+      if (SX.max in v) {
+        ret.max = parseInt(v[SX.max][0].ldterm.value);
+        if (isNaN(ret.max))
+          ret.max = UNBOUNDED;
+      }
+      return ret;
     }
 
     function tripleExpr (v: any): any {

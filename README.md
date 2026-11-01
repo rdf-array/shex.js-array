@@ -4,18 +4,21 @@
 
 **RDF-** fork of [shex.js](https://github.com/shexjs/shex.js): ShEx over an RDF data model whose
 fifth kind of term is the **sequence**, `(1 2 3)`, in place of `rdf:first`/`rdf:rest` ladders.
-ShEx-array adds one shape expression, the **Collection**, `((shapeExpr))[min, max]`:
+ShEx-array adds one shape expression, **`LIST`**, a regular expression over a sequence's members:
 
 ```shex
-<S> { :p ((LITERAL))[3] }          # :p's value is a sequence of exactly 3 literals
-<T> ((@<S> OR IRI))[1, *]          # a sequence of 1 or more, each a conformant <S> or an IRI
-<U> { :q ((((xsd:integer))[2])) }  # a sequence of pairs of integers, of any length
+<S> { :p LIST {3} LITERAL }                  # :p's value is a sequence of exactly 3 literals
+<T> LIST + ( @<S> OR IRI )                   # 1 or more members, each a conformant <S> or an IRI
+<U> { :q LIST * LIST {2} xsd:integer }       # a sequence of pairs of integers, of any length
+<V> LIST ( xsd:string ; xsd:integer )        # a pair: a string, then an integer
+<W> LIST ( ( xsd:string ; xsd:integer ) * )  # pairs flattened into one list
 ```
 
-`[m]` is exactly m elements, `[m, n]` from m to n, `[m, *]` (or `[m,]`) at least m, and no bounds
-any length; `((x))` is always a Collection, `(x)` still a parenthesised shape expression. In ShExJ it
-is `{"type": "Collection", "shapeExpr": …, "min": m, "max": n}` (`-1` unbounded), and a sequence node
-in a shape map or a validation result is the JSON array of its elements. The data side comes from
+`LIST ( regex )` matches a sequence whose members, in order, match the regular expression, whose atoms
+are shape expressions and whose `;`, `|`, `( )` and cardinalities work as in a triple expression (but `;`
+is ordered); `LIST card x` is short for `LIST ( x card )`. In ShExJ it is `{"type": "ListShape",
+"expression": …}` over `Member`, `ListEachOf` and `ListOneOf` with `min`/`max` (`-1` unbounded), and a
+sequence node in a shape map or a validation result is the JSON array of its members. The data side comes from
 [N3.js-array](https://github.com/rdf-array/N3.js-array) and
 [types-array](https://github.com/rdf-array/types-array) (`@rdfjs/types` with `Sequence`), the editor
 grammars from [lezer-shexc-array](https://github.com/rdf-array/lezer-shexc-array) and

@@ -17,13 +17,14 @@ describe("ShExR.shex", function () {
 
   // rdf-array: the spec's ShExR.shex matches rdf:first/rdf:rest ladders; this fork's
   // reads the same documents under rdf-array, where `( ... )` is one sequence term, so
-  // every @<#...ListNPlus> ladder shape is a Collection, ((@<#X>))[n, *], and a
-  // Collection shape expression is itself describable in ShExR.
+  // every @<#...ListNPlus> ladder shape is a LIST, `LIST + @<#X>`, and a LIST shape
+  // expression (sx:ListShape, sx:Member, sx:ListEachOf, sx:ListOneOf) is itself describable in ShExR.
   it("should be the spec's ShExR.shex read under rdf-array (tools/shexr-rdf-array.js)", function () {
     const text = Fs.readFileSync(SHEXR, "utf8");
     expect(text).to.not.match(/rdf:first|rdf:rest|rdf:nil|List[012]Plus/);
-    expect(text).to.include("sx:shapes ((@<#ShapeDecl>))[1, *] ?");
-    expect(text).to.include("<#Collection> CLOSED {");
+    expect(text).to.include("sx:shapes LIST + @<#ShapeDecl> ?");
+    expect(text).to.include("<#ListShape> CLOSED {");
+    expect(text).to.include("<#listExpr> @<#Member> OR @<#ListEachOf> OR @<#ListOneOf>");
     // The spec's own ShExR.shex: shexTest-array, the corpus these tests read, carries an rdf-array
     // version, so look for an unconverted copy (SHEXTEST_UPSTREAM, the corpus, ../../shexSpec/shexTest).
     const candidates = [];
@@ -31,7 +32,7 @@ describe("ShExR.shex", function () {
       candidates.push(Path.join(process.env.SHEXTEST_UPSTREAM, "doc", "ShExR.shex"));
     try { candidates.push(findPath("doc") + "ShExR.shex"); } catch (e) { /* no corpus */ }
     candidates.push(Path.join(__dirname, "..", "..", "..", "..", "..", "shexSpec", "shexTest", "doc", "ShExR.shex"));
-    const spec = candidates.find(f => Fs.existsSync(f) && !/sx:Collection/.test(Fs.readFileSync(f, "utf8")));
+    const spec = candidates.find(f => Fs.existsSync(f) && !/sx:Collection|sx:ListShape/.test(Fs.readFileSync(f, "utf8")));
     if (!spec) this.skip();
     const {rdfMinusShExR} = require("../../../tools/shexr-rdf-array.js");
     expect(text, "out of date: node tools/shexr-rdf-array.js && node tools/gen-shexr-schema.js")

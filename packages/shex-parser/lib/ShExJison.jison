@@ -242,9 +242,9 @@
     return atom;	// t: 0
   }
 
-  // rdf-array: ((shapeExpr))[min, max], a Collection shape expression
-  function collection (shapeExpr, bounds) {
-    return extend({ type: "Collection", shapeExpr: typeof shapeExpr === "string" ? shapeExpr : nonest(shapeExpr) }, bounds);
+  // rdf-array: a LIST member's shape expression: `.` is the empty shape, as at the top of a declaration
+  function member (shapeExpr, yy) {
+    return shapeExpr === yy.EmptyShape ? { type: "Shape" } : nonest(shapeExpr);
   }
 %}
 
@@ -262,6 +262,7 @@ IT_EXTENDS		[Ee][Xx][Tt][Ee][Nn][Dd][Ss]
 IT_CLOSED               [Cc][Ll][Oo][Ss][Ee][Dd]
 IT_EXTRA                [Ee][Xx][Tt][Rr][Aa]
 IT_LITERAL              [Ll][Ii][Tt][Ee][Rr][Aa][Ll]
+IT_LIST                 [Ll][Ii][Ss][Tt]
 IT_BNODE                [Bb][Nn][Oo][Dd][Ee]
 IT_IRI                  [Ii][Rr][Ii]
 IT_NONLITERAL           [Nn][Oo][Nn][Ll][Ii][Tt][Ee][Rr][Aa][Ll]
@@ -392,6 +393,7 @@ COMMENT                 '#' [^\u000a\u000d]* | "/*" ([^*] | '*' ([^/] | '\\/'))*
 {IT_CLOSED}             return 'IT_CLOSED';
 {IT_EXTRA}              return 'IT_EXTRA';
 {IT_LITERAL}            return 'IT_LITERAL';
+{IT_LIST}               return 'IT_LIST';
 {IT_BNODE}              return 'IT_BNODE';
 {IT_IRI}                return 'IT_IRI';
 {IT_NONLITERAL}         return 'IT_NONLITERAL';
@@ -441,12 +443,6 @@ COMMENT                 '#' [^\u000a\u000d]* | "/*" ([^*] | '*' ([^/] | '\\/'))*
 
 /* operator associations and precedence */
 
-/* rdf-array: `((x))` is a Collection, never a doubly parenthesised x.  At
-   `( ( x ) . )` the parser could reduce the inner `( x )` to a parenthesised
-   shape atom or shift the Collection's closing paren; ')' outranks the paren
-   productions (%prec PAREN_SHAPE_EXPR), so it shifts.  `(x)` is unchanged. */
-%nonassoc PAREN_SHAPE_EXPR
-%nonassoc ')'
 
 %start shexDoc
 
@@ -596,7 +592,6 @@ _O_QshapeExpression_E_Or_QshapeRef_E_Or_QIT_EXTERNAL_E_C:
       shapeExpression	{
         $$ = nonest($1);
       }
-    | shapeRef	
     | IT_EXTERNAL	-> { type: "ShapeExternal" }
     ;
 
@@ -622,6 +617,7 @@ shapeExpression: // NOT? shapeAtomNoRef shapeOr?, with the NOT spelled out (rdf-
         delete $2.needsAtom;
         $$ = $2; // { type: "ShapeOr", "shapeExprs": [$1].concat($2) };
       }	// t: 1val1vExprRefAND3
+    | shapeRef	// rdf-array: alone, so that ( @<A> ) is a shape expression, as the grammar says
     ;
 
 _QshapeOr_E_Opt:
@@ -722,14 +718,13 @@ inlineShapeNot: // NOT? inlineShapeAtom
     ;
 
 shapeAtom:
-      nonLitNodeConstraint _QshapeOrRef_E_Opt	
+      listShape	// rdf-array: LIST ( … ), LIST card x
+    | nonLitNodeConstraint _QshapeOrRef_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1 // t: focusbnode0ORfocusPattern0 : focusvsANDIRI
     | litNodeConstraint	// t: 1NOT_literalANDvs_
     | shapeOrRef _QnonLitNodeConstraint_E_Opt	
         -> $2 ? shapeJunction("ShapeAnd", $1, [$2]) /* t: 1dotRef1 */ : $1 // t: @@ : 1val1vExprRefAND3
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
-    | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true}) // t: NOT1dotOR2dotX3
+    | '(' shapeExpression ')'	-> typeof $2 === 'string' ? $2 : Object.assign($2, {nested: true}) // t: NOT1dotOR2dotX3
     | '.'	-> yy.EmptyShape // t: @@
     ;
 
@@ -744,26 +739,24 @@ _QnonLitNodeConstraint_E_Opt:
     ;
 
 shapeAtomNoRef:
-      nonLitNodeConstraint _QshapeOrRef_E_Opt	
+      listShape	// rdf-array: LIST ( … ), LIST card x
+    | nonLitNodeConstraint _QshapeOrRef_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1 // t: 0focusIRI : 1NOTNOTIRI
     | litNodeConstraint	// t: 1val1refvsMinusiri3
     | shapeDefinition _QnonLitNodeConstraint_E_Opt	
 	-> $2 ? shapeJunction("ShapeAnd", $1, [$2]) : $1	 // t: @@ : 0 // 1dotRef1 -- use _QnonLitNodeConstraint_E_Opt like below?
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
-    | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true}) // t: NOT1dotOR2dotX3
+    | '(' shapeExpression ')'	-> typeof $2 === 'string' ? $2 : Object.assign($2, {nested: true}) // t: NOT1dotOR2dotX3
     | '.'	-> yy.EmptyShape // t: 1NOTNOTdot
     ;
 
 inlineShapeAtom:
-      nonLitInlineNodeConstraint _QinlineShapeOrRef_E_Opt	
+      listShape	// rdf-array: LIST ( … ), LIST card x
+    | nonLitInlineNodeConstraint _QinlineShapeOrRef_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1 // t: 1iriRef1 : 1iri
     | litInlineNodeConstraint	// t: 1literal
     | inlineShapeOrRef _QnonLitInlineNodeConstraint_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1 // t: @@ : 1dotRef1
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
-    | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true}) // t: 1NOTNOTIRI
+    | '(' shapeExpression ')'	-> typeof $2 === 'string' ? $2 : Object.assign($2, {nested: true}) // t: 1NOTNOTIRI
     | '.'	-> yy.EmptyShape // t: 1dot
     ;
 
@@ -775,6 +768,72 @@ _QinlineShapeOrRef_E_Opt:
 _QnonLitInlineNodeConstraint_E_Opt:
       	
     | nonLitInlineNodeConstraint	
+    ;
+
+/* rdf-array: the LIST shape expression over sequence terms (rdf-array/docs/array-syntax.md §2).
+   `LIST ( regex )` matches a sequence whose members, in order, match a regular
+   expression whose atoms are shape expressions: `;` concatenates, `|` chooses,
+   `( )` groups and a cardinality repeats, as in a triple expression (but `;`
+   is ordered).  `LIST card x` is short for `LIST ( x card )`; both give the same
+   ShExJ.  Inside LIST ( ), a `(` opens a group, so a member's first atom is
+   never parenthesised: listMemberAtom is inlineShapeAtom without that
+   alternative.  LIST stands wherever a shape atom does, except after EXTENDS. */
+listShape:
+      IT_LIST '(' listOneOf ')'	-> { type: "ListShape", expression: $3 }
+    | IT_LIST cardinality inlineShapeAtom	-> { type: "ListShape", expression: Object.assign({ type: "Member", shapeExpr: member($3, yy) }, $2) }
+    ;
+
+listOneOf:
+      listEachOf
+    | listEachOf _Q_O_QGT_PIPE_E_S_QlistEachOf_E_C_E_Plus	-> { type: "ListOneOf", expressions: [$1].concat($2) }
+    ;
+
+_Q_O_QGT_PIPE_E_S_QlistEachOf_E_C_E_Plus:
+      '|' listEachOf	-> [$2]
+    | _Q_O_QGT_PIPE_E_S_QlistEachOf_E_C_E_Plus '|' listEachOf	-> $1.concat([$3])
+    ;
+
+listEachOf:
+      listUnary
+    | listUnary _Q_O_QGT_SEMI_E_S_QlistUnary_E_C_E_Plus	-> { type: "ListEachOf", expressions: [$1].concat($2) }
+    ;
+
+_Q_O_QGT_SEMI_E_S_QlistUnary_E_C_E_Plus:
+      ';' listUnary	-> [$2]
+    | _Q_O_QGT_SEMI_E_S_QlistUnary_E_C_E_Plus ';' listUnary	-> $1.concat([$3])
+    ;
+
+/* A cardinality sets the member's or group's min and max; a group whose
+   expression already has them, `( x {2} ) {3}`, becomes a ListEachOf of one. */
+listUnary:
+      listMember
+    | listMember cardinality	-> Object.assign("min" in $1 || "max" in $1 ? { type: "ListEachOf", expressions: [$1] } : $1, $2)
+    ;
+
+listMember:
+      listMemberOr	-> { type: "Member", shapeExpr: member($1, yy) }
+    | '(' listOneOf ')'	-> $2
+    ;
+
+listMemberOr:
+      listMemberAnd _Q_O_QIT_OR_E_S_QinlineShapeAnd_E_C_E_Star	-> shapeJunction("ShapeOr", $1, $2)
+    ;
+
+listMemberAnd:
+      listMemberNot _Q_O_QIT_AND_E_S_QinlineShapeNot_E_C_E_Star	-> shapeJunction("ShapeAnd", $1, $2)
+    ;
+
+listMemberNot:
+      listMemberAtom
+    | IT_NOT inlineShapeAtom	-> { type: "ShapeNot", "shapeExpr": nonest($2) }
+    ;
+
+listMemberAtom:
+      nonLitInlineNodeConstraint _QinlineShapeOrRef_E_Opt	-> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1
+    | litInlineNodeConstraint
+    | inlineShapeOrRef _QnonLitInlineNodeConstraint_E_Opt	-> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1
+    | listShape
+    | '.'	-> yy.EmptyShape
     ;
 
 shapeOrRef:
@@ -1145,18 +1204,6 @@ senseFlags:
       '^'	-> { inverse: true } // t: 1inversedot
     ;
 
-_QcollectionBounds_E_Opt: // rdf-array
-      	
-    | collectionBounds	
-    ;
-
-collectionBounds: // rdf-array: [m] exactly m elements; [m, n] from m to n; [m, *] or [m,] at least m
-      '[' INTEGER ']'	-> { min: parseInt($2, 10), max: parseInt($2, 10) }
-    | '[' INTEGER ',' ']'	-> { min: parseInt($2, 10), max: UNBOUNDED }
-    | '[' INTEGER ',' '*' ']'	-> { min: parseInt($2, 10), max: UNBOUNDED }
-    | '[' INTEGER ',' INTEGER ']'	-> { min: parseInt($2, 10), max: parseInt($4, 10) }
-    ;
-
 valueSet:
       '[' _QvalueSetValue_E_Star ']'	-> $2 // t: 1val1IRIREF
     ;
@@ -1473,9 +1520,7 @@ extendsShapeAtom:
     | litInlineNodeConstraint	
     | inlineShapeOrRef _QnonLitInlineNodeConstraint_E_Opt	
         -> $2 ? { type: "ShapeAnd", shapeExprs: [ extend({ type: "NodeConstraint" }, $1), $2 ] } : $1
-    | '(' '(' shapeExpression ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((shapeExpr))[min, max]
-    | '(' '(' shapeRef ')' ')' _QcollectionBounds_E_Opt	-> collection($3, $6) // rdf-array: ((@<T>)), a bare reference, which a shapeExpression may not be
-    | '(' shapeExpression ')' %prec PAREN_SHAPE_EXPR	-> Object.assign($2, {nested: true})
+    | '(' shapeExpression ')'	-> typeof $2 === 'string' ? $2 : Object.assign($2, {nested: true})
     | '.'	-> yy.EmptyShape
     ;
 

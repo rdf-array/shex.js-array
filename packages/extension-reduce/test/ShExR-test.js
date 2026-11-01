@@ -117,7 +117,7 @@ BASE <http://a.example/>
             + `threw: ${outcome.threw.join(" ") || "none"}`;
       // 3circRefS2-IS3 doesn't comply with ShExR.shex; its entry in
       // schemas/manifest.ttl is commented out for the same reason.
-      // rdf-array: the corpus is shexTest-array, whose 1list* schemas are Collections and whose
+      // rdf-array: the corpus is shexTest-array, whose 1list* schemas are LIST shapes and whose
       // 1val1* fixtures write their value sets as sequences, so all of them read.
       expect(outcome.differed.sort(), report).to.deep.equal([]);
       expect(outcome.threw.map(t => t.split(":")[0]).sort(), report)

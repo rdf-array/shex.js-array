@@ -1233,9 +1233,17 @@ function tripleConstraints (schema: any) {
     switch (expr.type) {
     case "ShapeDecl": return shapeExpr(expr.shapeExpr);
     case "ShapeAnd": case "ShapeOr": return (expr.shapeExprs || []).forEach(shapeExpr);
-    case "ShapeNot": case "Collection": return shapeExpr(expr.shapeExpr);
+    case "ShapeNot": return shapeExpr(expr.shapeExpr);
+    case "ListShape": return listExpr(expr.expression); // rdf-array
     case "Shape": return tripleExpr(expr.expression);
     }
+  };
+  const listExpr = (expr: any): void => { // rdf-array: the members' shapes
+    if (!expr || typeof expr !== "object" || seen.has(expr))
+      return;
+    seen.add(expr);
+    if (expr.type === "Member") shapeExpr(expr.shapeExpr);
+    else (expr.expressions || []).forEach(listExpr);
   };
   const tripleExpr = (expr: any): void => {
     if (!expr || typeof expr !== "object" || seen.has(expr))

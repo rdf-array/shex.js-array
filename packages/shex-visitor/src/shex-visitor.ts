@@ -7,7 +7,7 @@ import {
   IRIREF, IriStemRange, LanguageStemRange, LiteralStemRange, NodeConstraint,
   OneOf,
   Schema, SemAct, Shape,
-  Collection, ShapeAnd, ShapeDecl, shapeDeclRef, ShapeExternal, shapeExprOrRef, ShapeNot,
+  ListShape, listExpr, ShapeAnd, ShapeDecl, shapeDeclRef, ShapeExternal, shapeExprOrRef, ShapeNot,
   ShapeOr, TripleConstraint, tripleExprOrRef, tripleExprRef,
   iriRangeExclusion, literalRangeExclusion, languageRangeExclusion,
   nodeKind, valueSetValue,
@@ -173,7 +173,7 @@ export class ShExVisitor {
     case "ShapeAnd": return this.visitShapeAnd(expr, ...args);
     case "ShapeOr": return this.visitShapeOr(expr, ...args);
     case "ShapeNot": return this.visitShapeNot(expr, ...args);
-    case "Collection": return this.visitCollection(expr, ...args);
+    case "ListShape": return this.visitListShape(expr, ...args);
     case "ShapeExternal": return this.visitShapeExternal(expr, ...args);
     default:
       throw Error("unexpected shapeExpr type: " + (expr as any).type + JSON.stringify(expr));
@@ -206,13 +206,32 @@ export class ShExVisitor {
     return r;
   }
 
-  // rdf-array: visitCollection: visit a Collection, ((shapeExpr))[min, max]
-  visitCollection (expr: Collection, ...args: any[]): any {
-    this._testUnknownAttributes(expr, ["shapeExpr", "min", "max"], "Collection", this.visitCollection)
+  // rdf-array: visitListShape: visit a ListShape, LIST ( … ), and its regular expression
+  visitListShape (expr: ListShape, ...args: any[]): any {
+    this._testUnknownAttributes(expr, ["expression"], "ListShape", this.visitListShape)
     const r: any = { type: expr.type };
     if ("id" in expr)
       r.id = (expr as any).id;
-    r.shapeExpr = this.visitShapeExpr(expr.shapeExpr, ...args);
+    r.expression = this.visitListExpr(expr.expression, ...args);
+    return r;
+  }
+
+  // rdf-array: visitListExpr: a Member, or a ListEachOf or ListOneOf of list expressions, with min/max
+  visitListExpr (expr: listExpr, ...args: any[]): any {
+    const r: any = { type: expr.type };
+    switch (expr.type) {
+    case "Member":
+      this._testUnknownAttributes(expr, ["shapeExpr", "min", "max"], "Member", this.visitListExpr);
+      r.shapeExpr = this.visitShapeExpr(expr.shapeExpr, ...args);
+      break;
+    case "ListEachOf":
+    case "ListOneOf":
+      this._testUnknownAttributes(expr, ["expressions", "min", "max"], expr.type, this.visitListExpr);
+      r.expressions = expr.expressions.map((nested) => this.visitListExpr(nested, ...args));
+      break;
+    default:
+      throw Error("unexpected list expression type: " + (expr as any).type + JSON.stringify(expr));
+    }
     if (expr.min !== undefined)
       r.min = expr.min;
     if (expr.max !== undefined)

@@ -36,7 +36,7 @@
  * node yields quietly wrong validation results.
  */
 import * as RdfJs from "@rdfjs/types";
-import {Shape, ShapeDecl, shapeExprOrRef, tripleExprOrRef} from "shexj";
+import {listExpr, Shape, ShapeDecl, shapeExprOrRef, tripleExprOrRef} from "shexj";
 import {InternalSchema, SchemaIndex} from "@shexjs/term";
 import {DbParamSpec, DbQueryTracker, Neighborhood, NeighborhoodDb, ParamEditor, QuerySource, SparqlAnswer, Start} from "@shexjs/neighborhood-api";
 import * as ShExUtil from "@shexjs/util";
@@ -381,9 +381,14 @@ export function sparqlDB (endpoint: string, queryTracker?: DbQueryTracker, optio
       case "ShapeAnd":
       case "ShapeOr": se.shapeExprs.forEach(visitShapeExpr); break;
       case "ShapeNot": visitShapeExpr(se.shapeExpr); break;
-      case "Collection": visitShapeExpr(se.shapeExpr); break; // rdf-array
+      case "ListShape": visitListExpr(se.expression); break; // rdf-array
       default: break;                          // NodeConstraint, ShapeExternal
       }
+    }
+
+    function visitListExpr (le: listExpr): void { // rdf-array: the members' shapes
+      if (le.type === "Member") visitShapeExpr(le.shapeExpr);
+      else le.expressions.forEach(visitListExpr);
     }
 
     function visitTripleExpr (te: tripleExprOrRef): void {

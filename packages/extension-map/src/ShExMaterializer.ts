@@ -384,8 +384,8 @@ function ShExMaterializer_constructor(this: any, schema: any, mapper: any, optio
         } else
           passes.push(sub);
       }
-    } else if (shapeExpr.type === "Collection") {
-      throw Error("rdf-array: Collection shape expressions are not materialized: " + JSON.stringify(shapeExpr));
+    } else if (shapeExpr.type === "ListShape") {
+      throw Error("rdf-array: LIST shape expressions are not materialized: " + JSON.stringify(shapeExpr));
     } else
       throw Error("expected one of Shape{Ref,And,Or} or NodeConstraint, got " + JSON.stringify(shapeExpr));
     if ("known" in this)

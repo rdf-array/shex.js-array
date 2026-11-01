@@ -9,7 +9,7 @@ var path = require("path");
 // (which maps the standard dirs) and by a direct subdirectory (which also
 // resolves the `*-contrib` dirs the module doesn't export).
 var ROOT = path.resolve(__dirname, "../../..");
-// rdf-array: the corpus is shexTest-array (Collection shapes where shexTest has ladder shapes): a
+// rdf-array: the corpus is shexTest-array (LIST shapes where shexTest has ladder shapes): a
 // sibling ../shexTest-array comes first, then ../shexTest (where CI clones shexTest-array), then the
 // shex-test devDependency (also shexTest-array); the upstream ../../shexSpec/shexTest layout comes
 // last, after the dependency, so that a checkout of the original does not shadow the fork.

@@ -10,7 +10,7 @@ import {Start} from "@shexjs/neighborhood-api";
 export {};
 
 export type shapeExprTest = ShapeOrResults | ShapeAndResults | ShapeNotResults
-  | CollectionResults | CollectionFailure // rdf-array
+  | ListShapeResults | ListShapeFailure // rdf-array
   | ShapeTest | NodeTest | NodeConstraintTest
   | SolutionList
   | Failure | error | FailureList
@@ -36,10 +36,11 @@ export interface ShapeNotResults {
   solution: Failure
 }
 
-/** rdf-array: a sequence conformed to a Collection, ((shapeExpr))[min, max]: one result per element, in order. */
-export interface CollectionResults {
-  type: "CollectionResults";
-  node: ShExJ.objectValue;       // the sequence, as the array of its elements
+/** rdf-array: a sequence conformed to a ListShape, `LIST ( … )`: one result per member, in order,
+ * each the result of the Member expression that matched it. */
+export interface ListShapeResults {
+  type: "ListShapeResults";
+  node: ShExJ.objectValue;       // the sequence, as the array of its members
   solutions: shapeExprTest[];
 }
 
@@ -86,10 +87,11 @@ export interface ShapeNotFailure extends NestedFailure {
   type: "ShapeNotFailure";
 }
 
-/** rdf-array: the focus did not conform to a Collection: it is not a sequence (SequenceExpected), has the
- * wrong number of elements (CollectionLengthViolation), or some elements failed (CollectionElementFailure). */
-export interface CollectionFailure extends NestedFailure {
-  type: "CollectionFailure";
+/** rdf-array: the focus did not conform to a ListShape: it is not a sequence (SequenceExpected), some
+ * member conforms to none of the Member expressions tried on it (ListMemberFailure), or the members
+ * all pass but their number or arrangement does not match the expression (ListLengthViolation). */
+export interface ListShapeFailure extends NestedFailure {
+  type: "ListShapeFailure";
   node: ShExJ.objectValue;
 }
 
@@ -99,17 +101,17 @@ export interface SequenceExpected extends TypedFailure {
   message: string;
 }
 
-export interface CollectionLengthViolation extends TypedFailure {
-  type: "CollectionLengthViolation";
-  min: number;
-  max: number;                   // -1 for unbounded
+export interface ListLengthViolation extends TypedFailure {
+  type: "ListLengthViolation";
+  min: number;                   // the fewest members the expression matches
+  max: number;                   // the most, -1 for unbounded
   length: number;
   message: string;
 }
 
-export interface CollectionElementFailure extends NestedFailure {
-  type: "CollectionElementFailure";
-  index: number;
+export interface ListMemberFailure extends NestedFailure {
+  type: "ListMemberFailure";
+  index: number;                 // counting from 0
 }
 
 export interface TypedFailure { }

@@ -13,7 +13,7 @@
         "predicate": "http://a.example/p1",
         "object": [],
         "referenced": {
-          "type": "CollectionResults",
+          "type": "ListShapeResults",
           "node": [],
           "solutions": []
         }

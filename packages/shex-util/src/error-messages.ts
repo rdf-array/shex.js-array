@@ -266,12 +266,12 @@ const leaves: {[type: string]: (err: any, ctx: ErrorContext) => ErrorDescription
     triple: ctx.triple,
     node: err.node || ctx.node,
   }),
-  // rdf-array: a Collection, ((shapeExpr))[min, max], wants a sequence of the right length
+  // rdf-array: a ListShape, LIST ( … ), wants a sequence whose members match its expression
   SequenceExpected: (err, ctx) => ({
     text: err.message || "not a sequence",
     node: ctx.node,
   }),
-  CollectionLengthViolation: (err, ctx) => ({
+  ListLengthViolation: (err, ctx) => ({
     text: err.message || ("sequence of " + err.length + " where " + err.min + " to " + err.max + " expected"),
     node: ctx.node,
   }),

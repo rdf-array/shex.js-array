@@ -6,10 +6,10 @@ start=@<#Schema>
 
 <#Schema> CLOSED {
   a [sx:Schema] ;
-  sx:imports ((IRI))[1, *] ? ;
-  sx:startActs ((@<#SemAct>))[1, *] ? ;
+  sx:imports LIST + IRI ? ;
+  sx:startActs LIST + @<#SemAct> ? ;
   sx:start @<#shapeDeclOrExpr> ? ;
-  sx:shapes ((@<#ShapeDecl>))[1, *] ?
+  sx:shapes LIST + @<#ShapeDecl> ?
 }
 
 <#shapeDeclOrExpr> @<#ShapeDecl> OR @<#shapeExpr>
@@ -20,16 +20,16 @@ start=@<#Schema>
   sx:shapeExpr @<#shapeExpr>
 }
 
-<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal> OR @<#Collection>
+<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal> OR @<#ListShape>
 
 <#ShapeOr> CLOSED {
   a [sx:ShapeOr] ;
-  sx:shapeExprs ((@<#shapeDeclOrExpr>))[2, *]
+  sx:shapeExprs LIST {2,} @<#shapeDeclOrExpr>
 }
 
 <#ShapeAnd> CLOSED {
   a [sx:ShapeAnd] ;
-  sx:shapeExprs ((@<#shapeDeclOrExpr>))[2, *]
+  sx:shapeExprs LIST {2,} @<#shapeDeclOrExpr>
 }
 
 <#ShapeNot> CLOSED {
@@ -37,10 +37,33 @@ start=@<#Schema>
   sx:shapeExpr @<#shapeDeclOrExpr>
 }
 
-# rdf-array: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr
-<#Collection> CLOSED {
-  a [sx:Collection] ;
+# rdf-array: the LIST shape expression, LIST ( regex ) over the members of a sequence or LIST card x. Its
+# expression is a Member (min..max consecutive members, each matching shapeExpr; max -1: unbounded) or an
+# ordered ListEachOf or ListOneOf of list expressions, with min and max as on triple expressions.
+<#ListShape> CLOSED {
+  a [sx:ListShape] ;
+  sx:expression @<#listExpr>
+}
+
+<#listExpr> @<#Member> OR @<#ListEachOf> OR @<#ListOneOf>
+
+<#Member> CLOSED {
+  a [sx:Member] ;
   sx:shapeExpr @<#shapeDeclOrExpr> ;
+  sx:min xsd:integer ? ;
+  sx:max xsd:integer ?
+}
+
+<#ListEachOf> CLOSED {
+  a [sx:ListEachOf] ;
+  sx:expressions LIST + @<#listExpr> ;
+  sx:min xsd:integer ? ;
+  sx:max xsd:integer ?
+}
+
+<#ListOneOf> CLOSED {
+  a [sx:ListOneOf] ;
+  sx:expressions LIST {2,} @<#listExpr> ;
   sx:min xsd:integer ? ;
   sx:max xsd:integer ?
 }
@@ -50,19 +73,19 @@ start=@<#Schema>
   sx:nodeKind [sx:iri sx:bnode sx:literal sx:nonliteral] ? ;
   sx:datatype IRI ? ;
   &<#xsFacets> ;
-  sx:values ((@<#valueSetValue>))[1, *] ? ;
-  sx:semActs ((@<#SemAct>))[1, *] ? ;
-  sx:annotation ((@<#Annotation>))[1, *] ?
+  sx:values LIST + @<#valueSetValue> ? ;
+  sx:semActs LIST + @<#SemAct> ? ;
+  sx:annotation LIST + @<#Annotation> ?
 }
 
 <#Shape> CLOSED {
   a [sx:Shape] ;
-  sx:extends ((@<#shapeDeclOrExpr>))[1, *] ? ;
+  sx:extends LIST + @<#shapeDeclOrExpr> ? ;
   sx:closed [true false] ? ;
   sx:extra IRI * ;
   sx:expression @<#tripleExpression> ? ;
-  sx:semActs ((@<#SemAct>))[1, *] ? ;
-  sx:annotation ((@<#Annotation>))[1, *] ?
+  sx:semActs LIST + @<#SemAct> ? ;
+  sx:annotation LIST + @<#Annotation> ?
 }
 
 <#ShapeExternal> CLOSED {
@@ -103,20 +126,20 @@ start=@<#Schema>
 <#valueSetValue> @<#objectValue> OR @<#IriStem> OR @<#IriStemRange>
                                OR @<#LiteralStem> OR @<#LiteralStemRange>
                 OR @<#Language> OR @<#LanguageStem> OR @<#LanguageStemRange>
-<#objectValue> IRI OR LITERAL OR ((@<#objectValue>)) # rdf:langString breaks on Annotation.object # rdf-array: or a sequence of them
+<#objectValue> IRI OR LITERAL OR LIST * @<#objectValue> # rdf:langString breaks on Annotation.object # rdf-array: or a sequence of them
 
 <#IriStem> CLOSED { a [sx:IriStem] ; sx:stem xsd:string }
 <#IriStemRange> CLOSED {
   a [sx:IriStemRange] ;
   sx:stem xsd:string OR @<#Wildcard> ;
-  sx:exclusion ((IRI OR @<#IriStem>))[1, *]
+  sx:exclusion LIST + ( IRI OR @<#IriStem> )
 }
 
 <#LiteralStem> CLOSED { a [sx:LiteralStem] ; sx:stem xsd:string }
 <#LiteralStemRange> CLOSED {
   a [sx:LiteralStemRange] ;
   sx:stem xsd:string OR @<#Wildcard> ;
-  sx:exclusion ((xsd:string OR @<#LiteralStem>))[1, *]
+  sx:exclusion LIST + ( xsd:string OR @<#LiteralStem> )
 }
 
 <#Language> CLOSED { a [sx:Language] ; sx:languageTag xsd:string }
@@ -124,7 +147,7 @@ start=@<#Schema>
 <#LanguageStemRange> CLOSED {
   a [sx:LanguageStemRange] ;
   sx:stem xsd:string OR @<#Wildcard> ;
-  sx:exclusion ((xsd:string OR @<#LanguageStem>))[1, *]
+  sx:exclusion LIST + ( xsd:string OR @<#LanguageStem> )
 }
 
 <#Wildcard> BNODE CLOSED {
@@ -143,18 +166,18 @@ start=@<#Schema>
   a [sx:OneOf] ;
   sx:min xsd:integer ? ;
   sx:max xsd:integer ? ;
-  sx:expressions ((@<#tripleExpression>))[2, *] ;
-  sx:semActs ((@<#SemAct>))[1, *] ? ;
-  sx:annotation ((@<#Annotation>))[1, *] ?
+  sx:expressions LIST {2,} @<#tripleExpression> ;
+  sx:semActs LIST + @<#SemAct> ? ;
+  sx:annotation LIST + @<#Annotation> ?
 }
 
 <#EachOf> CLOSED {
   a [sx:EachOf] ;
   sx:min xsd:integer ? ;
   sx:max xsd:integer ? ;
-  sx:expressions ((@<#tripleExpression>))[2, *] ;
-  sx:semActs ((@<#SemAct>))[1, *] ? ;
-  sx:annotation ((@<#Annotation>))[1, *] ?
+  sx:expressions LIST {2,} @<#tripleExpression> ;
+  sx:semActs LIST + @<#SemAct> ? ;
+  sx:annotation LIST + @<#Annotation> ?
 }
 
 <#TripleConstraint> CLOSED {
@@ -164,10 +187,10 @@ start=@<#Schema>
   sx:max xsd:integer ? ;
   sx:predicate IRI ;
   sx:valueExpr @<#shapeDeclOrExpr> ? ;
-  sx:semActs ((@<#SemAct>))[1, *] ? ;
-  sx:annotation ((@<#Annotation>))[1, *] ?
+  sx:semActs LIST + @<#SemAct> ? ;
+  sx:annotation LIST + @<#Annotation> ?
 }
 
 # rdf-array: there are no RDF lists.  A list written `( ... )` is one sequence term,
-# matched above by the Collection shape expressions ((@<#X>))[1, *] in place of
-# the ListNPlus ladder shapes of shexTest's ShExR.shex.
+# matched above by the LIST shape expressions `LIST + @<#X>` in place of the
+# ListNPlus ladder shapes of shexTest's ShExR.shex.

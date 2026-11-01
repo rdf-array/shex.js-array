@@ -25,13 +25,13 @@ const findPath = require("./findPath.js");
 const schemasPath = findPath("schemas");
 const jsonSchemasPath = findPath("parsedSchemas");
 const manifestFile = schemasPath + "manifest.jsonld";
-// rdf-array: the fork's ShExR.shex (the spec's, with Collections for the list ladders), not the spec's
+// rdf-array: the fork's ShExR.shex (the spec's, with LIST shapes for the list ladders), not the spec's
 const ShExRSchemaFile = require("path").join(__dirname, "../../shex-util/ShExR.shex");
 const negativeTests = [
   {path: findPath("negativeSyntax"), include: "Parse error"},
   {path: findPath("negativeStructure"), include: "Structural error"}
 ];
-// rdf-array: shexTest-contrib's Collection schemas and negative syntax tests run beside shexTest's
+// rdf-array: shexTest-contrib's LIST schemas and negative syntax tests run beside shexTest's
 const contribRoot = require("./findContribPath.js")();
 if (contribRoot)
   negativeTests.push({path: contribRoot + "negativeSyntax-contrib/", include: "Parse error"});

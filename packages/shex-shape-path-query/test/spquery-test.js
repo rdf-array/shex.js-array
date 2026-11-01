@@ -34,7 +34,7 @@ const SpqueryTests = [
 // rdf:first/rdf:rest ladder shape (@<#DiscList1>) while its data writes the
 // discussion as `( ... )`, one sequence term under rdf-array; the example lives in a
 // dependency, so the test is left out rather than the example rewritten
-// (((@<#DiscItem>))[1, *] would say it).  See doc/rdf-array.md.
+// (`LIST + @<#DiscItem>` would say it).  See doc/rdf-array.md.
 describe('spquery-test', () => {
   SpqueryTests.forEach(t => {
     it.skip(`$(${render(t.cmd, ' ')}) to equal [${render(t.expected, ', ')}]`, async () => {

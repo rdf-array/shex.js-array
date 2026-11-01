@@ -5,7 +5,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -34,7 +34,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -68,7 +68,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -98,7 +98,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -126,7 +126,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -155,7 +155,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |

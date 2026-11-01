@@ -79,12 +79,29 @@ BASE <http://shex.io/examples/shexr-actions>
   [ sa:ref sx:ShapeExternal ;
     sa:code "{type: 'ShapeExternal'}" ] ,
 
-  # rdf-array: ((shapeExpr))[min, max], a sequence of min to max elements each conforming to shapeExpr
-  [ sa:ref sx:Collection ;
-    sa:code "$$ = state.merge({type: 'Collection'}, $sx:shapeExpr, $sx:min, $sx:max)" ] ,
-  [ sa:path "@sx:Collection~sx:shapeExpr" ; sa:code "$$ = {shapeExpr: $1}" ] ,
-  [ sa:path "@sx:Collection~sx:min" ;       sa:code "$$ = {min: num($1)}" ] ,
-  [ sa:path "@sx:Collection~sx:max" ;       sa:code "$$ = {max: num($1)}" ] ,
+  # rdf-array: LIST ( … ), a sequence whose members match a regular expression over
+  # shape expressions: a Member (min..max members each conforming to shapeExpr) or a
+  # ListEachOf or ListOneOf of list expressions, with min and max
+  [ sa:ref sx:ListShape ;
+    sa:code "{type: 'ListShape', expression: one('sx:expression')}" ] ,
+
+  [ sa:ref sx:Member ;
+    sa:code "$$ = state.merge({type: 'Member'}, $sx:shapeExpr, $sx:min, $sx:max)" ] ,
+  [ sa:path "@sx:Member~sx:shapeExpr" ; sa:code "$$ = {shapeExpr: $1}" ] ,
+  [ sa:path "@sx:Member~sx:min" ;       sa:code "$$ = {min: num($1)}" ] ,
+  [ sa:path "@sx:Member~sx:max" ;       sa:code "$$ = {max: num($1)}" ] ,
+
+  [ sa:ref sx:ListEachOf ;
+    sa:code "$$ = state.merge({type: 'ListEachOf'}, $sx:expressions, $sx:min, $sx:max)" ] ,
+  [ sa:path "@sx:ListEachOf~sx:expressions" ; sa:code "$$ = {expressions: $1}" ] ,
+  [ sa:path "@sx:ListEachOf~sx:min" ;         sa:code "$$ = {min: num($1)}" ] ,
+  [ sa:path "@sx:ListEachOf~sx:max" ;         sa:code "$$ = {max: num($1)}" ] ,
+
+  [ sa:ref sx:ListOneOf ;
+    sa:code "$$ = state.merge({type: 'ListOneOf'}, $sx:expressions, $sx:min, $sx:max)" ] ,
+  [ sa:path "@sx:ListOneOf~sx:expressions" ; sa:code "$$ = {expressions: $1}" ] ,
+  [ sa:path "@sx:ListOneOf~sx:min" ;         sa:code "$$ = {min: num($1)}" ] ,
+  [ sa:path "@sx:ListOneOf~sx:max" ;         sa:code "$$ = {max: num($1)}" ] ,
 
   [ sa:ref sx:Shape ;
     sa:code """
@@ -232,6 +249,6 @@ BASE <http://shex.io/examples/shexr-actions>
   ##### RDF lists
   #
   # rdf-array: a list written `( ... )` is one sequence term, and ShExR.shex matches
-  # it with a Collection, ((@<#X>))[n, *].  A CollectionResults reduces to the
-  # array of its elements' values, so no action is needed per list shape.
+  # it with a LIST, `LIST + @<#X>`.  A ListShapeResults reduces to the array of its
+  # members' values, so no action is needed per list shape.
 .

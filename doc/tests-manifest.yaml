@@ -17,7 +17,7 @@
     PREFIX : <http://a.example/>
 
     <Colour> {
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3]   # a sequence of exactly 3 bytes
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes
     }
   dataLabel: red
   data: |
@@ -27,14 +27,14 @@
   queryMap: |
     <red>@<Colour>
   status: conformant
-  comment: 'rdf-array: `(255 0 0)` is one term, a sequence of three integers, not an rdf:first/rdf:rest ladder of blank nodes. ShEx-array''s Collection `((shapeExpr))[3]` matches a sequence of exactly three elements, each satisfying shapeExpr.'
+  comment: 'rdf-array: `(255 0 0)` is one term, a sequence of three integers, not an rdf:first/rdf:rest ladder of blank nodes. ShEx-array''s `LIST {3} shapeExpr` matches a sequence of exactly three members, each satisfying shapeExpr; `LIST ( regex )` takes a regular expression over the members.'
 - schemaLabel: 'rdf-array: a colour is three bytes'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
 
     <Colour> {
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3]   # a sequence of exactly 3 bytes
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes
     }
   dataLabel: pink has only two components
   data: |
@@ -44,14 +44,14 @@
   queryMap: |
     <pink>@<Colour>
   status: nonconformant
-  comment: 'Two elements where `[3]` wants exactly three: a CollectionLengthViolation. `[m, n]` bounds the length, `[m, *]` (or `[m,]`) is at least m, and no bounds is any length.'
+  comment: 'Two members where `{3}` wants exactly three: a ListLengthViolation. `LIST {m,n} x` is m to n members, `LIST + x` one or more, `LIST * x` any number, and `LIST ( x ; y )` a pair.'
 - schemaLabel: 'rdf-array: a colour is three bytes'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
 
     <Colour> {
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3]   # a sequence of exactly 3 bytes
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes
     }
   dataLabel: 'red: every triple (SPARQL)'
   data: |
@@ -73,7 +73,7 @@
     PREFIX : <http://a.example/>
 
     <Polygon> {
-      :points ((((xsd:decimal))[2]))[3, *]   # 3 or more points, each a sequence of 2 decimals
+      :points LIST {3,} LIST {2} xsd:decimal   # 3 or more points, each a sequence of 2 decimals
     }
   dataLabel: a triangle
   data: |
@@ -83,14 +83,14 @@
   queryMap: |
     <triangle>@<Polygon>
   status: conformant
-  comment: 'Sequences nest: each element of the outer sequence is a sequence matched by the inner Collection. `((x))` is always a Collection and `(x)` a parenthesised shape expression, so `((((xsd:decimal))[2]))` is a Collection of Collections.'
+  comment: 'Sequences nest: each member of the outer sequence is a sequence matched by the inner LIST. `LIST {3,} LIST {2} xsd:decimal` is `LIST ( LIST ( xsd:decimal {2} ) {3,} )`, a list of pairs.'
 - schemaLabel: 'rdf-array: a polygon is three or more points'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     PREFIX : <http://a.example/>
 
     <Polygon> {
-      :points ((((xsd:decimal))[2]))[3, *]   # 3 or more points, each a sequence of 2 decimals
+      :points LIST {3,} LIST {2} xsd:decimal   # 3 or more points, each a sequence of 2 decimals
     }
   dataLabel: 'a triangle: every triple (SPARQL)'
   data: |
@@ -113,7 +113,7 @@
 
     <Playlist> {
       :title  xsd:string ;
-      :tracks ((@<Track>))[1, *]   # one or more tracks, in order
+      :tracks LIST + @<Track>   # one or more tracks, in order
     }
 
     <Track> {
@@ -132,7 +132,7 @@
   queryMap: |
     <mix>@<Playlist>
   status: conformant
-  comment: 'Each element is a focus node of its own: `@<Track>` is checked against the element''s triples, and the order of the tracks is the order of the sequence, with no ladder to walk.'
+  comment: 'Each member is a focus node of its own: `@<Track>` is checked against the member''s triples, and the order of the tracks is the order of the sequence, with no ladder to walk.'
 - schemaLabel: 'rdf-array: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -140,7 +140,7 @@
 
     <Playlist> {
       :title  xsd:string ;
-      :tracks ((@<Track>))[1, *]   # one or more tracks, in order
+      :tracks LIST + @<Track>   # one or more tracks, in order
     }
 
     <Track> {
@@ -159,7 +159,7 @@
   queryMap: |
     <mix>@<Playlist>
   status: nonconformant
-  comment: The Collection reports a CollectionElementFailure for element 1 (counting from 0), carrying <Track>'s own errors for <t2>.
+  comment: The LIST reports a ListMemberFailure for member 1 (counting from 0), carrying <Track>'s own errors for <t2>.
 - schemaLabel: 'rdf-array: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -167,7 +167,7 @@
 
     <Playlist> {
       :title  xsd:string ;
-      :tracks ((@<Track>))[1, *]   # one or more tracks, in order
+      :tracks LIST + @<Track>   # one or more tracks, in order
     }
 
     <Track> {
@@ -197,7 +197,7 @@
     PREFIX : <http://a.example/>
 
     <Bag> {
-      :items ((.))   # a sequence, of any length, of anything
+      :items LIST * .   # a sequence, of any length, of anything
     }
   dataLabel: the empty sequence, and an IRI that is no sequence
   data: |
@@ -209,13 +209,13 @@
     <empty>@<Bag>,
     <notASeq>@!<Bag>
   status: conformant
-  comment: '`()` is the empty sequence, not rdf:nil, so it is a Collection of length 0. An IRI is not a sequence and fails with SequenceExpected, which the `!` claims. A sequence satisfies no nodeKind (IRI, BNODE, LITERAL, NONLITERAL) but matches `.`.'
+  comment: '`()` is the empty sequence, not rdf:nil, so `LIST * .` accepts it (`LIST + .` would not). An IRI is not a sequence and fails with SequenceExpected, which the `!` claims. A sequence satisfies no nodeKind (IRI, BNODE, LITERAL, NONLITERAL) but matches `.`.'
 - schemaLabel: 'rdf-array: a bag of anything'
   schema: |
     PREFIX : <http://a.example/>
 
     <Bag> {
-      :items ((.))   # a sequence, of any length, of anything
+      :items LIST * .   # a sequence, of any length, of anything
     }
   dataLabel: 'the empty sequence, and an IRI that is no sequence: every triple (SPARQL)'
   data: |
@@ -1462,7 +1462,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -1491,7 +1491,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -1525,7 +1525,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -1555,7 +1555,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -1583,7 +1583,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |
@@ -1612,7 +1612,7 @@
 
     :Colour {
       :name xsd:string ;
-      :rgb ((xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255))[3] ;
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 ;
       :paint . ?
     }
   data: |

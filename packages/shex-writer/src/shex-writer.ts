@@ -47,6 +47,18 @@ interface ShExCWriterOptions {
 
 type Piece = string | number;
 
+/** rdf-array: a list expression's cardinality, as a triple expression writes one (absent: 1) */
+function listCardinality (min: number | undefined, max: number | undefined): string {
+  min = min ?? 1; max = max ?? 1;
+  if (min === 0 && max === 1) return "?";
+  if (min === 0 && max === UNBOUNDED) return "*";
+  if (min === 1 && max === UNBOUNDED) return "+";
+  return "{" + min + (max === min ? "" : "," + (max === UNBOUNDED ? "*" : max)) + "}";
+}
+function startsWithParen (pieces: Piece[]): boolean {
+  return pieces.length > 0 && String(pieces[0]).startsWith("(");
+}
+
 class ShExCWriter {
   _outputStream: WritableStream;
   _endStream: boolean;
@@ -210,21 +222,75 @@ class ShExCWriter {
       [].push.apply(pieces, _ShExCWriter._writeShapeExpr(shapeExpr.shapeExpr, done, forceBraces, 4) as never[]);
       if (parentPrec >= 4)
         pieces.push(")");
-    } else if (shapeExpr.type === "Collection") {
-      // rdf-array: ((shapeExpr))[min, max]; [m] is exactly m, [m, *] at least m, no bounds any length
-      pieces.push("((");
-      [].push.apply(pieces, _ShExCWriter._writeShapeExpr(shapeExpr.shapeExpr, done, forceBraces, 0) as never[]);
-      pieces.push("))");
-      if (shapeExpr.min !== undefined || shapeExpr.max !== undefined) {
-        const min = shapeExpr.min ?? 0, max = shapeExpr.max ?? -1;
-        pieces.push("[" + min + (max === min ? "" : max === -1 ? ", *" : ", " + max) + "]");
+    } else if (shapeExpr.type === "ListShape") {
+      // rdf-array: `LIST card x` when the expression is one Member with a cardinality
+      // (the shortest spelling that reads back to the same ShExJ), else `LIST ( regex )`.
+      // A LIST is an atom, so it never needs parentheses of its own.
+      const e = shapeExpr.expression;
+      if (e.type === "Member" && (e.min !== undefined || e.max !== undefined)) {
+        pieces.push("LIST ", listCardinality(e.min, e.max), " ");
+        [].push.apply(pieces, _ShExCWriter._writeMemberShapeExpr(e.shapeExpr, done, forceBraces, 4) as never[]); // an inlineShapeAtom: junctions in parentheses
+      } else {
+        pieces.push("LIST ( ");
+        [].push.apply(pieces, _ShExCWriter._writeListExpr(e, done, forceBraces, 0) as never[]);
+        pieces.push(" )");
       }
     } else if (shapeExpr.type === "Shape") {
       [].push.apply(pieces, _ShExCWriter._writeShape(shapeExpr, done, forceBraces) as never[]);
     } else if (shapeExpr.type === "NodeConstraint") {
       [].push.apply(pieces, _ShExCWriter._writeNodeConstraint(shapeExpr, done) as never[]);
     } else
-      throw Error("expected Shape{,And,Or,Ref,Collection} or NodeConstraint in " + JSON.stringify(shapeExpr));
+      throw Error("expected Shape{,And,Or,Ref,List} or NodeConstraint in " + JSON.stringify(shapeExpr));
+    return pieces;
+  }
+
+  /** rdf-array: a member's shape expression; the empty shape, `.` in ShExC, is written so */
+  _writeMemberShapeExpr (se: ShExJ.shapeExprOrRef, done?: DoneCallback, forceBraces?: boolean, parentPrec: number = 0): Piece[] {
+    return typeof se !== "string" && se.type === "Shape" && Object.keys(se).every(k => k === "type")
+      ? ["."]
+      : this._writeShapeExpr(se, done, forceBraces, parentPrec);
+  }
+
+  /** rdf-array: a ListShape's regular expression over shape expressions.
+   * parentPrec: 0 directly under LIST ( ), 1 in a ListOneOf, 2 in a ListEachOf;
+   * a group is parenthesised when it has a cardinality or sits in a group that
+   * binds as tightly, so the ShExJ nesting reads back as written. */
+  _writeListExpr (expr: ShExJ.listExpr, done?: DoneCallback, forceBraces?: boolean, parentPrec: number = 0): Piece[] {
+    const _ShExCWriter = this;
+    const pieces: Piece[] = [];
+    const card = expr.min !== undefined || expr.max !== undefined ? " " + listCardinality(expr.min, expr.max) : "";
+    if (expr.type === "Member") {
+      // Inside LIST ( ), a member's first atom is never parenthesised (that `(`
+      // would open a group), so a junction whose first operand would be is
+      // written with an operand that is not in front -- the same conjunction
+      // or disjunction, in another order.
+      let se = expr.shapeExpr;
+      let written = _ShExCWriter._writeMemberShapeExpr(se, done, forceBraces, 0);
+      if (startsWithParen(written) && typeof se !== "string" && (se.type === "ShapeAnd" || se.type === "ShapeOr")) {
+        const prec = se.type === "ShapeAnd" ? 3 : 2;
+        const first = se.shapeExprs.findIndex(sub => !startsWithParen(_ShExCWriter._writeShapeExpr(sub, done, forceBraces, prec)));
+        if (first === -1)
+          throw Error("rdf-array: a LIST member may not begin with a parenthesis; cannot write " + JSON.stringify(se));
+        se = Object.assign({}, se, {shapeExprs: [se.shapeExprs[first]].concat(se.shapeExprs.filter((_, i) => i !== first))});
+        written = _ShExCWriter._writeShapeExpr(se, done, forceBraces, 0);
+      }
+      [].push.apply(pieces, written as never[]);
+      pieces.push(card);
+    } else {
+      const eachOf = expr.type === "ListEachOf";
+      const prec = eachOf ? 2 : 1;
+      const parens = card !== "" || parentPrec >= prec || expr.expressions.length === 1;
+      if (parens)
+        pieces.push("( ");
+      expr.expressions.forEach((sub, ord) => {
+        if (ord > 0)
+          pieces.push(eachOf ? " ; " : " | ");
+        [].push.apply(pieces, _ShExCWriter._writeListExpr(sub, done, forceBraces, prec) as never[]);
+      });
+      if (parens)
+        pieces.push(" )");
+      pieces.push(card);
+    }
     return pieces;
   }
 

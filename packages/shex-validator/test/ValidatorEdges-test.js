@@ -82,7 +82,7 @@ describe("validator edges", function () {
       const validator = validatorFor(`<${S1}> { <${p1}> . }`);
       const ctx = new ShapeExprValidationContext(null, S1);
       expect(() => validator.validateShapeExpr(node(s1), {type: "Bogus"}, ctx))
-        .to.throw(/expected one of Shape\{Ref,And,Or,Collection\} or NodeConstraint/);
+        .to.throw(/expected one of Shape\{Ref,And,Or,List\} or NodeConstraint/);
     });
 
     it("should refuse a node kind ShExC has no word for", function () {
