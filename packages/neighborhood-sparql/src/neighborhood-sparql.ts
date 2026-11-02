@@ -388,7 +388,7 @@ export function sparqlDB (endpoint: string, queryTracker?: DbQueryTracker, optio
 
     function visitListExpr (le: listExpr): void { // rdf-array: the members' shapes
       if (le.type === "Member") visitShapeExpr(le.shapeExpr);
-      else le.expressions.forEach(visitListExpr);
+      else if (le.type !== "Undef") le.expressions.forEach(visitListExpr);
     }
 
     function visitTripleExpr (te: tripleExprOrRef): void {

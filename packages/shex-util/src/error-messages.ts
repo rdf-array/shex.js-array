@@ -271,6 +271,15 @@ const leaves: {[type: string]: (err: any, ctx: ErrorContext) => ErrorDescription
     text: err.message || "not a sequence",
     node: ctx.node,
   }),
+  // rdf-undef: only undef matches an empty slot, and undef matches nothing else
+  SlotFailure: (err, ctx) => ({
+    text: err.message || "an empty slot, which only undef matches",
+    node: ctx.node,
+  }),
+  UndefExpected: (err, ctx) => ({
+    text: err.message || "not an empty slot",
+    node: ctx.node,
+  }),
   ListLengthViolation: (err, ctx) => ({
     text: err.message || ("sequence of " + err.length + " where " + err.min + " to " + err.max + " expected"),
     node: ctx.node,

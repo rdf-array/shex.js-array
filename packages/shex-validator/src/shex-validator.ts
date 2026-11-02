@@ -16,7 +16,7 @@ import {
   ConstraintToTripleResults, TripleResult
 } from "@shexjs/eval-validator-api";
 import * as Hierarchy from 'hierarchy-closure';
-import type {Quad, Term as RdfJsTerm} from '@rdfjs/types';
+import type {Quad, Term as RdfJsTerm, SequenceElement} from '@rdfjs/types';
 import {Neighborhood, NeighborhoodDb, Start as NeighborhoodStart} from "@shexjs/neighborhood-api";
 import {
   error,
@@ -674,9 +674,13 @@ function driveSync<T> (task: Resumable<T>, db: NeighborhoodDb): T {
  * reached state recovers which Member matched each member, which is what
  * ListShapeResults reports, in order.  A counted repetition unrolls into
  * that many copies; `-1` is a loop.
+ *
+ * rdf-undef: an Undef is a transition too, taken only at an empty slot, and a
+ * slot passes no Member's test, whatever its shapeExpr (`.` and NOT included).
  */
 type ListState = number;
-interface ListStep { member: ShExJ.Member, to: ListState }
+type ListAtom = ShExJ.Member | ShExJ.Undef;
+interface ListStep { member: ListAtom, to: ListState }
 interface ListBack { from: ListState, step?: ListStep }   // how a state was reached: by a member test, or by ε from `from`
 
 class ListMatcher {
@@ -684,11 +688,11 @@ class ListMatcher {
   private steps: ListStep[][] = [];
   private start: ListState;
   private end: ListState;
-  private tests = new Map<ShExJ.Member, Map<number, shapeExprTest>>();
+  private tests = new Map<ListAtom, Map<number, shapeExprTest>>();
   private deadAt = -1;          // the position where no state survived, or the sequence's length when it ended early
-  private tried: ShExJ.Member[] = [];   // the Members whose tests failed there
+  private tried: ListAtom[] = [];   // the Members whose tests failed there
 
-  constructor (private validator: ShExValidator, private expr: ShExJ.listExpr, private members: readonly RdfJsTerm[], private ctx: ShapeExprValidationContext) {
+  constructor (private validator: ShExValidator, private expr: ShExJ.listExpr, private members: readonly SequenceElement[], private ctx: ShapeExprValidationContext) {
     const frag = this.compile(expr);
     this.start = frag.start;
     this.end = frag.end;
@@ -721,6 +725,7 @@ class ListMatcher {
   /** one occurrence of e, entered at `from`; returns its exit state */
   private once (e: ShExJ.listExpr, from: ListState): ListState {
     switch (e.type) {
+    case "Undef":
     case "Member": {
       const to = this.state();
       this.steps[from].push({member: e, to});
@@ -742,7 +747,7 @@ class ListMatcher {
       return end;
     }
     default:
-      throw Error("expected a Member, ListEachOf or ListOneOf, got " + JSON.stringify(e));
+      throw Error("expected a Member, Undef, ListEachOf or ListOneOf, got " + JSON.stringify(e));
     }
   }
 
@@ -760,14 +765,21 @@ class ListMatcher {
     return seeds;
   }
 
-  /** member i against m's shapeExpr, once */
-  private * test (i: number, m: ShExJ.Member): Resumable<shapeExprTest> {
+  /** member i against m's shapeExpr, or as a slot when m is an Undef, once */
+  private * test (i: number, m: ListAtom): Resumable<shapeExprTest> {
     let byIndex = this.tests.get(m);
     if (!byIndex)
       this.tests.set(m, byIndex = new Map());
     let result = byIndex.get(i);
     if (result === undefined) {
-      result = yield* this.validator.resumeShapeExpr(this.members[i], m.shapeExpr, this.ctx);
+      const member = this.members[i];
+      result = m.type === "Undef"
+        ? member.termType === "Undef"
+          ? {type: "UndefResult"} as unknown as shapeExprTest
+          : {type: "UndefExpected", errors: [{type: "UndefExpected", index: i, message: `member ${i + 1} is not an empty slot`}]} as unknown as shapeExprTest
+        : member.termType === "Undef"
+          ? {type: "SlotFailure", errors: [{type: "SlotFailure", index: i, message: `member ${i + 1} is an empty slot, which only undef matches`}]} as unknown as shapeExprTest
+          : yield* this.validator.resumeShapeExpr(member, m.shapeExpr, this.ctx);
       byIndex.set(i, result);
     }
     return result;
@@ -778,7 +790,7 @@ class ListMatcher {
     const levels: Map<ListState, ListBack>[] = [this.closure(new Map([[this.start, {from: -1}]]))];
     for (let i = 0; i < this.members.length; ++i) {
       const next = new Map<ListState, ListBack>();
-      const tried: ShExJ.Member[] = [];
+      const tried: ListAtom[] = [];
       for (const s of levels[i].keys())
         for (const step of this.steps[s]) {
           if (next.has(step.to))
@@ -840,15 +852,15 @@ class ListMatcher {
     return [{type: "ListLengthViolation", min, max, length: n, message}];
   }
 
-  private * memberFailure (i: number, tried: ShExJ.Member[]): Resumable<object> {
+  private * memberFailure (i: number, tried: ListAtom[]): Resumable<object> {
     const errors: shapeExprTest[] = [];
     for (const m of tried)
       errors.push(yield* this.test(i, m));
     return {type: "ListMemberFailure", index: i, errors};
   }
 
-  private allMembers (e: ShExJ.listExpr): ShExJ.Member[] {
-    return e.type === "Member" ? [e] : e.expressions.reduce((ret: ShExJ.Member[], sub) => ret.concat(this.allMembers(sub)), []);
+  private allMembers (e: ShExJ.listExpr): ListAtom[] {
+    return e.type === "Member" || e.type === "Undef" ? [e] : e.expressions.reduce((ret: ListAtom[], sub) => ret.concat(this.allMembers(sub)), []);
   }
 
   /** the fewest and the most members e matches (-1: unbounded) */
@@ -2483,7 +2495,7 @@ function valueInExclusions(exclusions: Array<IRIREF | IriStem | ObjectLiteral | 
   })
 }
 
-function testValueSetValue(valueSetValueP: string | ObjectLiteral | objectValue[] | IriStem | IriStemRange | LiteralStem | LiteralStemRange | Language | LanguageStem | LanguageStemRange, value: RdfJsTerm): boolean {
+function testValueSetValue(valueSetValueP: string | ObjectLiteral | (objectValue | null)[] | IriStem | IriStemRange | LiteralStem | LiteralStemRange | Language | LanguageStem | LanguageStemRange, value: RdfJsTerm): boolean {
   if (Array.isArray(valueSetValueP)) { // rdf-array: a sequence, as the array of its elements
     return value.termType === "Sequence" && ShExTerm.ld2RdfJsTerm(valueSetValueP).equals(value);
   } else if (typeof valueSetValueP === "string") { // Iri

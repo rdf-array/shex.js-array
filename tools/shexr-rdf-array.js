@@ -5,7 +5,7 @@
  * rdf:first/rdf:rest ladder shapes (@<#...ListNPlus>) can't match it.  This
  * rewrites every ladder reference as a LIST shape expression, `LIST + @<#X>`
  * or `LIST {2,} @<#X>`, drops the ladder shapes, and adds the LIST shape
- * expression (sx:ListShape over sx:Member, sx:ListEachOf and sx:ListOneOf,
+ * expression (sx:ListShape over sx:Member, sx:Undef, sx:ListEachOf and sx:ListOneOf,
  * rdf-array/docs/array-syntax.md §7) to the shapeExpr union so a ShExR
  * document can say one.
  *
@@ -43,11 +43,13 @@ function rdfMinusShExR (spec) {
       "<#shapeExpr> @<#ShapeOr> OR @<#ShapeAnd> OR @<#ShapeNot> OR @<#NodeConstraint> OR @<#Shape> OR @<#ShapeExternal> OR @<#ListShape>\n", 1);
   sub(/(<#ShapeNot> CLOSED \{\n  a \[sx:ShapeNot\] ;\n  sx:shapeExpr @<#shapeDeclOrExpr>\n\}\n)/,
       "$1\n# rdf-array: the LIST shape expression, LIST ( regex ) over the members of a sequence or LIST card x. Its\n"
-      + "# expression is a Member (min..max consecutive members, each matching shapeExpr; max -1: unbounded) or an\n"
+      + "# expression is a Member (min..max consecutive members, each matching shapeExpr; max -1: unbounded), an Undef\n"
+      + "# (min..max empty slots) or an\n"
       + "# ordered ListEachOf or ListOneOf of list expressions, with min and max as on triple expressions.\n"
       + "<#ListShape> CLOSED {\n  a [sx:ListShape] ;\n  sx:expression @<#listExpr>\n}\n\n"
-      + "<#listExpr> @<#Member> OR @<#ListEachOf> OR @<#ListOneOf>\n\n"
+      + "<#listExpr> @<#Member> OR @<#Undef> OR @<#ListEachOf> OR @<#ListOneOf>\n\n"
       + "<#Member> CLOSED {\n  a [sx:Member] ;\n  sx:shapeExpr @<#shapeDeclOrExpr> ;\n  sx:min xsd:integer ? ;\n  sx:max xsd:integer ?\n}\n\n"
+      + "<#Undef> CLOSED {\n  a [sx:Undef] ;\n  sx:min xsd:integer ? ;\n  sx:max xsd:integer ?\n}\n\n"
       + "<#ListEachOf> CLOSED {\n  a [sx:ListEachOf] ;\n  sx:expressions LIST + @<#listExpr> ;\n  sx:min xsd:integer ? ;\n  sx:max xsd:integer ?\n}\n\n"
       + "<#ListOneOf> CLOSED {\n  a [sx:ListOneOf] ;\n  sx:expressions LIST {2,} @<#listExpr> ;\n  sx:min xsd:integer ? ;\n  sx:max xsd:integer ?\n}\n", 1);
   // a value-set member or an annotation object may be a sequence, as `( )` -- the

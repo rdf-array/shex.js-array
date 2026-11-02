@@ -216,13 +216,16 @@ export class ShExVisitor {
     return r;
   }
 
-  // rdf-array: visitListExpr: a Member, or a ListEachOf or ListOneOf of list expressions, with min/max
+  // rdf-array: visitListExpr: a Member, an Undef, or a ListEachOf or ListOneOf of list expressions, with min/max
   visitListExpr (expr: listExpr, ...args: any[]): any {
     const r: any = { type: expr.type };
     switch (expr.type) {
     case "Member":
       this._testUnknownAttributes(expr, ["shapeExpr", "min", "max"], "Member", this.visitListExpr);
       r.shapeExpr = this.visitShapeExpr(expr.shapeExpr, ...args);
+      break;
+    case "Undef":
+      this._testUnknownAttributes(expr, ["min", "max"], "Undef", this.visitListExpr);
       break;
     case "ListEachOf":
     case "ListOneOf":

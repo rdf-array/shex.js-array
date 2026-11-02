@@ -91,6 +91,11 @@ describe("rdf-array LIST: writing", function () {
       "<S> LIST ( . ; { <p> . } ; IRI @<T> ; NOT ( IRI OR BNODE ) ; @<B> AND ( @<A> OR @<C> ) )",
       "<S> LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255",
       "<S> LIST ? .",
+      "<S> LIST ( xsd:integer ; undef )", // rdf-undef
+      "<S> LIST ( ( xsd:integer | undef ) * )",
+      "<S> LIST ( undef {2} ; . )",
+      "<S> LIST * undef",
+      "<S> { <p> LIST ( xsd:integer | undef ) * }",
     ].forEach(text => {
       const once = parse(`PREFIX xsd: <${XSD}>\n${text}`);
       const written = write(once);

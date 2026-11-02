@@ -227,7 +227,9 @@ class ShExCWriter {
       // (the shortest spelling that reads back to the same ShExJ), else `LIST ( regex )`.
       // A LIST is an atom, so it never needs parentheses of its own.
       const e = shapeExpr.expression;
-      if (e.type === "Member" && (e.min !== undefined || e.max !== undefined)) {
+      if (e.type === "Undef" && (e.min !== undefined || e.max !== undefined)) {
+        pieces.push("LIST ", listCardinality(e.min, e.max), " undef");
+      } else if (e.type === "Member" && (e.min !== undefined || e.max !== undefined)) {
         pieces.push("LIST ", listCardinality(e.min, e.max), " ");
         [].push.apply(pieces, _ShExCWriter._writeMemberShapeExpr(e.shapeExpr, done, forceBraces, 4) as never[]); // an inlineShapeAtom: junctions in parentheses
       } else {
@@ -259,7 +261,9 @@ class ShExCWriter {
     const _ShExCWriter = this;
     const pieces: Piece[] = [];
     const card = expr.min !== undefined || expr.max !== undefined ? " " + listCardinality(expr.min, expr.max) : "";
-    if (expr.type === "Member") {
+    if (expr.type === "Undef") {
+      pieces.push("undef", card);
+    } else if (expr.type === "Member") {
       // Inside LIST ( ), a member's first atom is never parenthesised (that `(`
       // would open a group), so a junction whose first operand would be is
       // written with an operand that is not in front -- the same conjunction

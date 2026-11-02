@@ -24,7 +24,7 @@ describe("ShExR.shex", function () {
     expect(text).to.not.match(/rdf:first|rdf:rest|rdf:nil|List[012]Plus/);
     expect(text).to.include("sx:shapes LIST + @<#ShapeDecl> ?");
     expect(text).to.include("<#ListShape> CLOSED {");
-    expect(text).to.include("<#listExpr> @<#Member> OR @<#ListEachOf> OR @<#ListOneOf>");
+    expect(text).to.include("<#listExpr> @<#Member> OR @<#Undef> OR @<#ListEachOf> OR @<#ListOneOf>");
     // The spec's own ShExR.shex: shexTest-array, the corpus these tests read, carries an rdf-array
     // version, so look for an unconverted copy (SHEXTEST_UPSTREAM, the corpus, ../../shexSpec/shexTest).
     const candidates = [];

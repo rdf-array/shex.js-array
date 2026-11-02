@@ -35,7 +35,7 @@
     "@comunica/query-sparql-rdfjs": "file:../../../comunica-array/engines/query-sparql-rdfjs",
     "relativize-url": "^1.0.0",
     "n3": "*",
-    "n3writer-wrapper-array": "github:rdf-array/n3writer-wrapper-array#rdf-sequences",
+    "n3writer-wrapper-array": "github:rdf-array/n3writer-wrapper-array#rdf-undef",
     "sparqljs": "^3.7.4"
   },
   "devDependencies": {

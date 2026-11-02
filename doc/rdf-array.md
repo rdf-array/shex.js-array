@@ -127,6 +127,27 @@ shex-validator (§4.2's verdicts under both engines, the failure types), plus sh
 shex-term's. `packages/shex-validator/test/val/1list*.val` are the corpus's results
 (`ListShapeResults`, one solution per member; `REGEN=1` re-records them).
 
+## rdf-undef
+
+Branch `rdf-undef`: the empty slot of a sequence, `( 1 undef 3 )`
+([rdf-undef.md](https://github.com/rdf-array/rdf-array/blob/rdf-undef/docs/rdf-undef.md) §5). `overrides` follow the `rdf-undef` branches
+of `n3`, `@rdfjs/types`, `lezer-shexc` and `lezer-turtle`, and `shex-test-contrib` and `n3writer-wrapper-array` do too. `package-lock.json`
+holds those branches' commits, written by hand because they are not pushed yet; until they are, `npm ci` cannot fetch them.
+
+- **Meaning.** No value constraint is met at a slot, `.` and `NOT` included. `undef` in place of a member matches a slot and nothing else:
+  `LIST ( ( xsd:integer | undef ) * )`, `LIST ( xsd:string ; undef )`, `LIST * undef`. A slot counts in the length. A sequence holding one is
+  still a value, so `{ :p . }` accepts it. `LIST ( xsd:integer | undef ) *` is a list of one member whose `*` counts triples, as §2.2 of
+  array-syntax.md says of any cardinality after a list.
+- **ShExC.** `undef`, any case, in `listMember` and after `LIST cardinality`. It is not a shape expression, so it takes no `AND`, `OR` or `NOT`;
+  `undef:x` stays a prefixed name.
+- **ShExJ.** `{ "type": "Undef", "min": m, "max": n }`, a sibling of `Member` in `listExpr` (`types/shexj/`). **ShExR.** `sx:Undef`, with `sx:min` and
+  `sx:max`; `<#Undef>` in `packages/shex-util/ShExR.shex`, and `tools/shexr-rdf-array.js` derives it.
+- **Validation.** `ListMatcher` takes an `Undef` as a transition that passes only at a slot. A `ListShapeResults` has `{ "type": "UndefResult" }` at a
+  slot; a member that fails has `SlotFailure` or `UndefExpected` under its `ListMemberFailure`. In a JSON array of members (a shape map, a result)
+  a slot is `null`; `@shexjs/term` exports `undefTerm`.
+- **Tests.** `ListShape-test.js` in shex-parser, shex-writer and shex-validator, and the 27 validation, 9 schema and 7 negative-syntax `undef*` tests of
+  shexTest-contrib under both engines. `npm test`: 7718 passing, 9 pending (7587 and 9 on `rdf-sequences`).
+
 ## Not done
 
 - The ShapeMap parser (`packages/shape-map`) has no syntax for a sequence node selector; give

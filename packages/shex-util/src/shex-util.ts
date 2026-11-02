@@ -16,7 +16,7 @@ const SX: Namespace = { _namespace: "http://www.w3.org/ns/shex#" };
 ["Schema", "@context", "imports", "startActs", "start", "shapes",
  "ShapeDecl", "ShapeOr", "ShapeAnd", "shapeExprs", "nodeKind",
  "NodeConstraint", "iri", "bnode", "nonliteral", "literal", "datatype", "length", "minlength", "maxlength", "pattern", "flags", "mininclusive", "minexclusive", "maxinclusive", "maxexclusive", "totaldigits", "fractiondigits", "values",
- "ShapeNot", "shapeExpr", "ListShape", "Member", "ListEachOf", "ListOneOf", // rdf-array
+ "ShapeNot", "shapeExpr", "ListShape", "Member", "Undef", "ListEachOf", "ListOneOf", // rdf-array
  "Shape", "abstract", "closed", "extra", "expression", "extends", "restricts", "semActs",
  "ShapeRef", "reference", "ShapeExternal",
  "EachOf", "OneOf", "expressions", "min", "max", "annotation",
@@ -1121,6 +1121,7 @@ const ShExUtil = {
           if (s.solution) // no .solution for <S> {}
             _dive1(s.solution);
         });
+      } else if (solns.type === "UndefResult") { // rdf-undef: a slot has no triples
       } else if (solns.type === "ListShapeResults") { // rdf-array: one result per member
         solns.solutions.forEach(_dive1);
       } else if (solns.type === "ShapeOrResults") {
@@ -1324,6 +1325,7 @@ const ShExUtil = {
         return null;
       }
     case "Recursion": // 3circRefPlus1_pass-recursiveData
+    case "UndefResult": // rdf-undef: a slot binds nothing
       return null;
     default:
       // console.log(val);
@@ -1348,6 +1350,8 @@ const ShExUtil = {
         if (!li) return false;
         if (li.type === "ListShapeResults") { // rdf-array: a sequence value, one result per member
           li.solutions.forEach((elementResult: any, i: number) => {
+            if (elementResult.type === "UndefResult") // rdf-undef: a slot has no value
+              return;
             let newElt = cb({object: li.node[i]});
             const t = _ShExUtil.walkVal(elementResult, cb);
             if (t && Object.keys(t).length > 0) { // (an element that is itself a sequence has no properties)
@@ -1684,7 +1688,7 @@ const ShExUtil = {
       }
     }
 
-    /* rdf-array: a ListShape's expression: sx:Member with sx:shapeExpr, or
+    /* rdf-array: a ListShape's expression: sx:Member with sx:shapeExpr, sx:Undef, or
      * sx:ListEachOf/sx:ListOneOf with sx:expressions, each with sx:min/sx:max. */
     function listExpr (x: any): any {
       const v = x.nested;
@@ -1693,6 +1697,8 @@ const ShExUtil = {
       if (t === SX.Member) {
         const se = v[SX.shapeExpr][0];
         ret = { type: "Member", shapeExpr: "nested" in se ? extend({ id: se.ldterm }, shapeDeclOrExpr(se.nested)) : se.ldterm };
+      } else if (t === SX.Undef) {
+        ret = { type: "Undef" };
       } else if (t === SX.ListEachOf || t === SX.ListOneOf) {
         ret = { type: t.substr(SX._namespace.length), expressions: v[SX.expressions].map(listExpr) };
       } else {

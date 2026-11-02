@@ -263,6 +263,7 @@ IT_CLOSED               [Cc][Ll][Oo][Ss][Ee][Dd]
 IT_EXTRA                [Ee][Xx][Tt][Rr][Aa]
 IT_LITERAL              [Ll][Ii][Tt][Ee][Rr][Aa][Ll]
 IT_LIST                 [Ll][Ii][Ss][Tt]
+IT_UNDEF                [Uu][Nn][Dd][Ee][Ff]
 IT_BNODE                [Bb][Nn][Oo][Dd][Ee]
 IT_IRI                  [Ii][Rr][Ii]
 IT_NONLITERAL           [Nn][Oo][Nn][Ll][Ii][Tt][Ee][Rr][Aa][Ll]
@@ -394,6 +395,7 @@ COMMENT                 '#' [^\u000a\u000d]* | "/*" ([^*] | '*' ([^/] | '\\/'))*
 {IT_EXTRA}              return 'IT_EXTRA';
 {IT_LITERAL}            return 'IT_LITERAL';
 {IT_LIST}               return 'IT_LIST';
+{IT_UNDEF}              return 'IT_UNDEF';
 {IT_BNODE}              return 'IT_BNODE';
 {IT_IRI}                return 'IT_IRI';
 {IT_NONLITERAL}         return 'IT_NONLITERAL';
@@ -777,10 +779,13 @@ _QnonLitInlineNodeConstraint_E_Opt:
    is ordered).  `LIST card x` is short for `LIST ( x card )`; both give the same
    ShExJ.  Inside LIST ( ), a `(` opens a group, so a member's first atom is
    never parenthesised: listMemberAtom is inlineShapeAtom without that
-   alternative.  LIST stands wherever a shape atom does, except after EXTENDS. */
+   alternative.  LIST stands wherever a shape atom does, except after EXTENDS.
+   `undef`, in place of a member, matches an empty slot of the sequence and
+   nothing else; it is not a shape expression, so it takes no AND, OR or NOT. */
 listShape:
       IT_LIST '(' listOneOf ')'	-> { type: "ListShape", expression: $3 }
     | IT_LIST cardinality inlineShapeAtom	-> { type: "ListShape", expression: Object.assign({ type: "Member", shapeExpr: member($3, yy) }, $2) }
+    | IT_LIST cardinality IT_UNDEF	-> { type: "ListShape", expression: Object.assign({ type: "Undef" }, $2) }
     ;
 
 listOneOf:
@@ -812,6 +817,7 @@ listUnary:
 
 listMember:
       listMemberOr	-> { type: "Member", shapeExpr: member($1, yy) }
+    | IT_UNDEF	-> { type: "Undef" }
     | '(' listOneOf ')'	-> $2
     ;
 

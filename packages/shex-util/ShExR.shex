@@ -38,18 +38,25 @@ start=@<#Schema>
 }
 
 # rdf-array: the LIST shape expression, LIST ( regex ) over the members of a sequence or LIST card x. Its
-# expression is a Member (min..max consecutive members, each matching shapeExpr; max -1: unbounded) or an
+# expression is a Member (min..max consecutive members, each matching shapeExpr; max -1: unbounded), an Undef
+# (min..max empty slots) or an
 # ordered ListEachOf or ListOneOf of list expressions, with min and max as on triple expressions.
 <#ListShape> CLOSED {
   a [sx:ListShape] ;
   sx:expression @<#listExpr>
 }
 
-<#listExpr> @<#Member> OR @<#ListEachOf> OR @<#ListOneOf>
+<#listExpr> @<#Member> OR @<#Undef> OR @<#ListEachOf> OR @<#ListOneOf>
 
 <#Member> CLOSED {
   a [sx:Member] ;
   sx:shapeExpr @<#shapeDeclOrExpr> ;
+  sx:min xsd:integer ? ;
+  sx:max xsd:integer ?
+}
+
+<#Undef> CLOSED {
+  a [sx:Undef] ;
   sx:min xsd:integer ? ;
   sx:max xsd:integer ?
 }

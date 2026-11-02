@@ -35,17 +35,23 @@
 */
 
 import * as ShExJ from 'shexj';
-import {Term as RdfJsTerm, Sequence as RdfJsSequence} from '@rdfjs/types';
+import {Term as RdfJsTerm, Sequence as RdfJsSequence, SequenceElement, Undef as RdfJsUndef} from '@rdfjs/types';
 const RelativizeIri = require("relativize-url").relativize;
 // import {relativize as RelativizeIri} from "relativize-url"; // someone should lecture the maintainer
 import {DataFactory} from 'rdf-data-factory';
 const RdfJsFactory = new DataFactory();
 
+/** rdf-undef: the empty slot of a sequence.  An element and nothing else. */
+export const undefTerm: RdfJsUndef = {
+  termType: "Undef", value: "undef",
+  equals (other: any): boolean { return !!other && other.termType === "Undef"; },
+} as RdfJsUndef;
+
 /** rdf-array: an RDF/JS Sequence term over the given elements.  rdf-data-factory
  * has no sequence(), so this is a plain object; it equals any sequence
  * (N3.js-array's included) with equal elements in the same order. */
-export function sequenceTerm (elements: RdfJsTerm[]): RdfJsSequence {
-  const value = "(" + elements.map(e => e.termType === "Sequence" ? e.value : rdfJsTerm2Turtle(e)).join(" ") + ")";
+export function sequenceTerm (elements: SequenceElement[]): RdfJsSequence {
+  const value = "(" + elements.map(e => e.termType === "Sequence" || e.termType === "Undef" ? e.value : rdfJsTerm2Turtle(e)).join(" ") + ")";
   return {
     termType: "Sequence", value, elements,
     equals (other: RdfJsTerm | null | undefined): boolean {
@@ -134,14 +140,14 @@ export function rdfJsTerm2Turtle (node: RdfJsTerm, meta?: Meta): string {
         : "^^" + node.datatype.value
     );
   case ("Sequence"): // rdf-array: a sequence writes as a collection of its elements
-    return "(" + node.elements.map(e => rdfJsTerm2Turtle(e, meta)).join(" ") + ")";
+    return "(" + node.elements.map(e => e.termType === "Undef" ? "undef" : rdfJsTerm2Turtle(e, meta)).join(" ") + ")";
   default: throw Error(`rdfJsTerm2Turtle: unknown RDFJS node type: ${JSON.stringify(node)}`)
   }
 }
 
 export function shExJsTerm2Turtle (node: any, meta: Meta = {base: "", prefixes: {}}, aForType?: boolean): any {
   if (Array.isArray(node)) // rdf-array: a sequence, as the array of its elements
-    return "(" + node.map(e => shExJsTerm2Turtle(e, meta, false)).join(" ") + ")";
+    return "(" + node.map(e => e === null ? "undef" : shExJsTerm2Turtle(e, meta, false)).join(" ") + ")";
   if (typeof node === "string") {
     if (node.startsWith("_:")) {
       return node;
@@ -201,7 +207,7 @@ export function ld2RdfJsTerm (ld: objectValue): RdfJsTerm {
   switch (typeof ld) {
   case 'object':
     if (Array.isArray(ld)) // rdf-array: a sequence, as the array of its elements
-      return sequenceTerm(ld.map(e => ld2RdfJsTerm(e)));
+      return sequenceTerm(ld.map(e => e === null ? undefTerm : ld2RdfJsTerm(e)));
     const copy = JSON.parse(JSON.stringify(ld));
     if (!copy.value)
       throw Error(`JSON-LD-style object literal has no value: ${JSON.stringify(ld)}`)
@@ -240,7 +246,7 @@ export function rdfJsTerm2Ld (term: RdfJsTerm): objectValue {
       ret.language = lang;
     return ret;
   case "Sequence": // rdf-array: a sequence, as the array of its elements
-    return term.elements.map(e => rdfJsTerm2Ld(e));
+    return term.elements.map(e => e.termType === "Undef" ? null : rdfJsTerm2Ld(e));
   default:
     throw Error(`Unrecognized termType ${term.termType} ${term.value}`);
   }

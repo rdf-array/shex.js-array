@@ -183,3 +183,34 @@ describe("rdf-array LIST: parsing", function () {
     });
   });
 });
+
+describe("rdf-undef: undef as a LIST member", function () {
+  const undef = card => Object.assign({type: "Undef"}, card);
+  it("is a member of a regular expression", function () {
+    expect(shapeExprOf("<S> LIST ( xsd:integer ; undef )")).to.deep.equal(list(eachOf([member(int), undef()])));
+    expect(shapeExprOf("<S> LIST ( ( xsd:integer | undef ) * )")).to.deep.equal(list(oneOf([member(int), undef()], star)));
+    expect(shapeExprOf("<S> LIST ( undef {2} )")).to.deep.equal(list(undef(exactly(2))));
+  });
+  it("takes the shorthand, in any case", function () {
+    expect(shapeExprOf("<S> LIST * UNDEF")).to.deep.equal(list(undef(star)));
+  });
+  it("leaves a cardinality after the list to the triple constraint", function () {
+    const tc = parse("<S> { <p> LIST ( xsd:integer | undef ) * }").shapes[0].shapeExpr.expression;
+    expect(tc).to.deep.include({min: 0, max: -1});
+    expect(tc.valueExpr).to.deep.equal(list(oneOf([member(int), undef()])));
+  });
+  it("leaves a prefix called undef: alone", function () {
+    const schema = ShExParser.construct(BASE, {}, {}).parse(`PREFIX undef: <${BASE}>\n<S> LIST ( @undef:T ; undef )`);
+    expect(schema.shapes[0].shapeExpr).to.deep.equal(list(eachOf([member(T), undef()])));
+  });
+  it("is not a shape expression", function () {
+    ["<S> LIST ( undef OR xsd:integer )", "<S> LIST ( xsd:integer OR undef )", "<S> LIST ( undef AND . )",
+     "<S> LIST ( NOT undef )", "<S> undef", "<S> { <p> undef }", "<S> LIST undef"].forEach(text => {
+      expect(() => parse(text), text).to.throw();
+    });
+  });
+  it("survives the visitor", function () {
+    const schema = parse("<S> LIST ( ( xsd:integer | undef {2} ) * )");
+    expect(new ShExVisitor().visitSchema(schema)).to.deep.equal(schema);
+  });
+});

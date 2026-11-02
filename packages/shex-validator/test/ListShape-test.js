@@ -246,3 +246,43 @@ describe("rdf-array LIST: the structure check", function () {
     });
   });
 }));
+
+[Threaded, Simple].forEach(engine => describe("rdf-undef: a slot in a sequence under " + engine.name, function () {
+  const verdict = (schemaText, dataText) => validate(schemaText, dataText, undefined, engine).status;
+  // the focus is the object of :x :p
+  const seq = text => `:x :p ${text} .`;
+  const value = (shapeExpr, dataText) => verdict(`<S> { :p ${shapeExpr} }`, dataText);
+
+  it("satisfies no member, . and NOT included", function () {
+    expect(value("LIST * xsd:integer", seq("(1 undef)"))).to.equal("nonconformant");
+    expect(value("LIST * .", seq("(1 undef)"))).to.equal("nonconformant");
+    expect(value("LIST * ( NOT xsd:string )", seq("(1 undef)"))).to.equal("nonconformant");
+    expect(value("LIST * LIST * .", seq("((undef))"))).to.equal("nonconformant");
+  });
+  it("is matched by undef, and nothing else is", function () {
+    expect(value("LIST ( ( xsd:integer | undef ) * )", seq("(1 undef 3)"))).to.equal("conformant");
+    expect(value("LIST ( ( xsd:integer | undef ) * )", seq("(1 2)"))).to.equal("conformant");
+    expect(value("LIST ( xsd:integer ; undef )", seq("(1 undef)"))).to.equal("conformant");
+    expect(value("LIST ( xsd:integer ; undef )", seq("(1 2)"))).to.equal("nonconformant");
+    expect(value("LIST * undef", seq("(undef undef)"))).to.equal("conformant");
+    expect(value("LIST * undef", seq("()"))).to.equal("conformant");
+    expect(value("LIST + undef", seq("()"))).to.equal("nonconformant");
+  });
+  it("counts in the length", function () {
+    expect(value("LIST ( undef {2} )", seq("(undef)"))).to.equal("nonconformant");
+    expect(value("LIST ( undef {2} )", seq("(undef undef)"))).to.equal("conformant");
+  });
+  it("leaves a sequence holding one a value like any", function () {
+    expect(value(".", seq("(undef)"))).to.equal("conformant");
+    expect(value("LIST ( LIST ( undef ) )", seq("((undef))"))).to.equal("conformant");
+  });
+  it("gives one result per member, and says why it fails", function () {
+    const ok = validate("<S> LIST ( xsd:integer ; undef )", seq("(1 undef)"), [int(1), null], engine);
+    expect(ok.status).to.equal("conformant");
+    expect(count(ok, "UndefResult")).to.equal(1);
+    const bad = validate("<S> { :p LIST * xsd:integer }", seq("(1 undef)"), undefined, engine);
+    expect(simple(bad)).to.include("member 2 is an empty slot");
+    const notSlot = validate("<S> { :p LIST ( undef ) }", seq("(1)"), undefined, engine);
+    expect(simple(notSlot)).to.include("member 1 is not an empty slot");
+  });
+}));

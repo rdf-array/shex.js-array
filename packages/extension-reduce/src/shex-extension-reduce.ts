@@ -478,6 +478,9 @@ function reduceNode (f: Fold, node: any): any {
       : values;
   }
 
+  case 'UndefResult':               // rdf-undef: a slot has no value
+    return null;
+
   case 'ListShapeResults':          // rdf-array: a value per member
     return node.solutions.map((s: any) => reduceNode(f, s));
 

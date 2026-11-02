@@ -91,6 +91,11 @@ BASE <http://shex.io/examples/shexr-actions>
   [ sa:path "@sx:Member~sx:min" ;       sa:code "$$ = {min: num($1)}" ] ,
   [ sa:path "@sx:Member~sx:max" ;       sa:code "$$ = {max: num($1)}" ] ,
 
+  [ sa:ref sx:Undef ;
+    sa:code "$$ = state.merge({type: 'Undef'}, $sx:min, $sx:max)" ] ,
+  [ sa:path "@sx:Undef~sx:min" ; sa:code "$$ = {min: num($1)}" ] ,
+  [ sa:path "@sx:Undef~sx:max" ; sa:code "$$ = {max: num($1)}" ] ,
+
   [ sa:ref sx:ListEachOf ;
     sa:code "$$ = state.merge({type: 'ListEachOf'}, $sx:expressions, $sx:min, $sx:max)" ] ,
   [ sa:path "@sx:ListEachOf~sx:expressions" ; sa:code "$$ = {expressions: $1}" ] ,

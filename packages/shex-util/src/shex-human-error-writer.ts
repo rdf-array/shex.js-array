@@ -113,6 +113,9 @@ class ShExHumanErrorWriter {
         .concat(this.nest(val.errors, said));
     case "ListMemberFailure":
       return ["member " + val.index + ":"].concat(this.nest(val.errors, said));
+    case "SlotFailure": // rdf-undef
+    case "UndefExpected":
+      return Array.isArray(val.errors) ? this.nest(val.errors, said) : [val.message];
     case "SemActFailure":
       // an action that explains itself (extension-path-assert) says what each
       // part evaluated to, one line each, under its message

@@ -40,7 +40,7 @@
     "mocha": "^12.0.3",
     "nock": "^14.0.17",
     "shex-test": "github:rdf-array/shexTest-array#rdf-sequences",
-    "shex-test-contrib": "github:rdf-array/shexTest-contrib#rdf-sequences",
+    "shex-test-contrib": "github:rdf-array/shexTest-contrib#rdf-undef",
     "source-map-support": "^0.5.21",
     "style-loader": "^4.0.0",
     "sync-request": "^6.1.0",
@@ -89,10 +89,10 @@
   "overrides": {
     "brace-expansion": "5.0.8",
     "@types/shexj": "file:types/shexj",
-    "@rdfjs/types": "github:rdf-array/types-array#rdf-sequences",
-    "n3": "github:rdf-array/N3.js-array#rdf-sequences",
-    "lezer-shexc": "github:rdf-array/lezer-shexc-array#rdf-sequences",
-    "lezer-turtle": "github:rdf-array/lezer-turtle-array#rdf-sequences"
+    "@rdfjs/types": "github:rdf-array/types-array#rdf-undef",
+    "n3": "github:rdf-array/N3.js-array#rdf-undef",
+    "lezer-shexc": "github:rdf-array/lezer-shexc-array#rdf-undef",
+    "lezer-turtle": "github:rdf-array/lezer-turtle-array#rdf-undef"
   },
   "shexjs": {
     "independent": [

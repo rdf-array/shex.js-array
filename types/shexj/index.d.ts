@@ -137,7 +137,7 @@ export interface ListShape {
  * rdf-array: the regular expression of a {@link ListShape}: a member, a concatenation or a choice,
  * each with the `min`/`max` of a triple expression (absent: 1; `-1`: unbounded).
  */
-export type listExpr = Member | ListEachOf | ListOneOf;
+export type listExpr = Member | Undef | ListEachOf | ListOneOf;
 
 /**
  * rdf-array: {@link #min} to {@link #max} consecutive members, each conforming to {@link #shapeExpr}.
@@ -151,6 +151,25 @@ export interface Member {
      * The {@link shapeExprOrRef} each of these members must conform to.
      */
     shapeExpr: shapeExprOrRef;
+    /**
+     * Least number of repetitions (default 1).
+     */
+    min?: INTEGER | undefined;
+    /**
+     * Greatest number of repetitions (default 1; -1 is unbounded).
+     */
+    max?: INTEGER | undefined;
+}
+
+/**
+ * rdf-undef: {@link #min} to {@link #max} consecutive empty slots of the sequence. It is not a shape
+ * expression: only this matches a slot, and no shape expression does.
+ */
+export interface Undef {
+    /**
+     * Mandatory type "Undef".
+     */
+    type: "Undef";
     /**
      * Least number of repetitions (default 1).
      */
@@ -353,7 +372,7 @@ export type valueSetValue =
 /**
  * JSON-LD representation of a URL or a Literal.
  */
-export type objectValue = IRIREF | ObjectLiteral | objectValue[]; // rdf-array: an array is a sequence of its elements
+export type objectValue = IRIREF | ObjectLiteral | (objectValue | null)[]; // rdf-array: an array is a sequence of its elements, null an empty slot
 
 /**
  * A <a href="https://www.w3.org/TR/json-ld11/#value-objects">JSON-LD Value Object</a> used to express an <a href="https://www.w3.org/TR/rdf11-concepts/#dfn-literal">RDF Literal</a>.
