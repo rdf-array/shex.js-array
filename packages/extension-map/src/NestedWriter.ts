@@ -397,6 +397,8 @@ class Writer {
       return this._encodeLiteral(object);
     case 'Sequence':
       return this._encodeSequence(object);
+    case 'Undef':
+      return 'undef';
     default:
       return this._encodeIriOrBlank(object);
     }

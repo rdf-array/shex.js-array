@@ -17,6 +17,12 @@ describe("NestedWriter", () => {
     expect(read(out)[0].object.termType).to.equal("Sequence");
   });
 
+  it("writes a slot as undef", async () => {
+    const out = await write(read('<http://a/s> <http://a/p> (1 undef ("a" undef)) .'));
+    expect(out).to.match(/\(.* undef \(.* undef\)\)/);
+    expect([...read(out)[0].object.elements][1].termType).to.equal("Undef");
+  });
+
   it("writes a sequence as a subject", async () => {
     const out = await write(read('("a") <http://a/p> "b" .'));
     expect(read(out)[0].subject.termType).to.equal("Sequence");
