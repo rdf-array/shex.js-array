@@ -313,8 +313,9 @@ class Writer {
 
   // ### `_encodeSubject` represents a subject
   _encodeSubject(entity: any): string {
-    return entity.termType === 'Quad' ?
-      this._encodeQuad(entity) : this._encodeIriOrBlank(entity);
+    return entity.termType === 'Quad' ? this._encodeQuad(entity) :
+      entity.termType === 'Sequence' ? this._encodeSequence(entity) :
+      this._encodeIriOrBlank(entity);
   }
 
   // ### `_encodeIriOrBlank` represents an IRI or blank node
@@ -394,9 +395,16 @@ class Writer {
       return this._encodeQuad(object);
     case 'Literal':
       return this._encodeLiteral(object);
+    case 'Sequence':
+      return this._encodeSequence(object);
     default:
       return this._encodeIriOrBlank(object);
     }
+  }
+
+  // ### `_encodeSequence` writes an rdf-array sequence term in place
+  _encodeSequence(sequence: any): string {
+    return `(${[...sequence.elements].map((e: any) => this._encodeObject(e)).join(' ')})`;
   }
 
   // ### `_encodeQuad` encodes an RDF* quad

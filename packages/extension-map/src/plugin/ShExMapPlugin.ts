@@ -627,22 +627,15 @@ const ShExMapVerbs = {
     const prefixes = this.Caches.outputSchema.parsed._prefixes;
     const ordered = orderedForNesting(quads);
     try {
-      // extractLists wants a store, and takes the list triples out of it
-      const store = new RdfJs.Store();
-      store.addQuads(ordered);
-      const lists = store.extractLists({remove: true});
       const writer = new ShExWebApp.NestedTurtleWriter.Writer(null, {
         format: "text/turtle",
         prefixes,
-        lists,
         version: 1.1,
         indent: "    ",
         checkCorefs: n => false,
       });
-      // ...but the *order* is the materializer's, not the store's: see
-      // orderedForNesting
-      writer.addQuads(ordered.filter(
-        q => store.countQuads(q.subject, q.predicate, q.object, q.graph) > 0));
+      // the *order* is the materializer's: see orderedForNesting
+      writer.addQuads(ordered);
       writer.end(onDone);
     } catch (e) {
       // a graph the nested writer can't lay out still has to be readable
@@ -809,20 +802,13 @@ const ShExMapVerbs = {
    * cross-pane hover highlighting; absent, the graph just renders. */
   renderMaterializedGraph (generatedGraph: any, outputShapeMap: ShapeMapPair[], provenance: any[]) {
     try {
-      // Extract rdf:Collection heads.
-      const lists = generatedGraph.extractLists({
-        remove: true // Remove quads involved in lists (RDF Collections).
-      });
-
       outputShapeMap.forEach(pair => {
         const {node, shape} = pair;
         try {
           const nestedWriter = new ShExWebApp.NestedTurtleWriter.Writer(null, {
-            // lists: {}, -- lists will require some thinking
             format: 'text/turtle',
             // baseIRI: resource.base,
             prefixes: this.Caches.outputSchema.parsed._prefixes,
-            lists,
             version: 1.1,
             indent: '    ',
             checkCorefs: n => false,
@@ -865,7 +851,7 @@ const ShExMapVerbs = {
             const bi = emitted.has(quadKey(b)) ? emitted.get(quadKey(b)) : Infinity;
             return ai - bi;
           });
-          nestedWriter.addQuads(inEmissionOrder.filter(q => ([ShExWebApp.Util.RDF.first, ShExWebApp.Util.RDF.rest]).indexOf(q.predicate.value) === -1));
+          nestedWriter.addQuads(inEmissionOrder);
           if (rest.size > 0) {
             nestedWriter.comment("\n# Triples not in the schema:");
             nestedWriter.addQuads(rest.getQuads())
