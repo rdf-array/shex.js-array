@@ -80,6 +80,7 @@ jobs:
       # default branch, so a run on rdf-sequences builds rdf-undef's forks from
       # scratch every time.
       - run: npm ci --foreground-scripts
+      - run: npm run check-manifests   # the examples manifests say the same thing in YAML and JSON
       - run: npm run webpacks-all
       - name: stage the branch's site
         run: |
