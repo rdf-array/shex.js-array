@@ -169,3 +169,14 @@ describe("extension-sparql", function () {
     });
   });
 });
+
+describe("queryPrefixes", () => {
+  it("should read the prefixes of a SPARQL-array query without parsing it", () => {
+    // UNNEST and ?s[1] are Comunica-array's to parse; a stock parser refuses them
+    const text = `PREFIX : <http://a.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>   # PREFIX no: <http://no/>
+SELECT ?s ?x WHERE { ?s :p "PREFIX q: <x>" ; :r """PREFIX r: <y>""" . UNNEST(?s AS ?m) BIND(?s[1] AS ?x) }`;
+    Assert.deepStrictEqual(Sparql.queryPrefixes(text), {"": "http://a.example/", xsd: "http://www.w3.org/2001/XMLSchema#"});
+    Assert.deepStrictEqual(Sparql.queryPrefixes("select * where { ?s ?p ?o }"), {});
+  });
+});
