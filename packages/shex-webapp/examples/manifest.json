@@ -31,6 +31,19 @@
     "comment": "The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match."
   },
   {
+    "schemaLabel": "rdf-array: a colour is three bytes",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes\n}\n",
+    "dataLabel": "red: the members (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<red> :rgb (255 0 0) .\n",
+    "queryMap": "<red>@<Colour>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?s ?r ?g ?b ?green ?n\nWHERE {\n  ?s :rgb (?r ?g ?b) .           # one variable per member\n  ?s :rgb ?rgb .\n  BIND (?rgb[2]      AS ?green)  # the second member, 1-based\n  BIND (SEQLEN(?rgb) AS ?n)\n}\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab, walking the sequence: `( ?r ?g ?b )` in a pattern binds one variable from each member, `?rgb[2]` indexes it (1-based) and `SEQLEN(?rgb)` counts, so the three bytes come out as three columns of one row, not three rows of an rdf:rest walk."
+  },
+  {
     "schemaLabel": "rdf-array: a polygon is three or more points",
     "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Polygon> {\n  :points LIST {3,} LIST {2} xsd:decimal   # 3 or more points, each a sequence of 2 decimals\n}\n",
     "dataLabel": "a triangle",
@@ -51,6 +64,19 @@
       "../../extension-sparql/doc/ShExSparqlPlugin.js"
     ],
     "comment": "The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match."
+  },
+  {
+    "schemaLabel": "rdf-array: a polygon is three or more points",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Polygon> {\n  :points LIST {3,} LIST {2} xsd:decimal   # 3 or more points, each a sequence of 2 decimals\n}\n",
+    "dataLabel": "a triangle: the points (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<triangle> :points ((0.0 0.0) (4.0 0.0) (0.0 3.0)) .\n",
+    "queryMap": "<triangle>@<Polygon>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?s ?i ?x ?y\nWHERE {\n  ?s :points ?pts .\n  UNNEST (?pts AS ?pt AT ?i)     # one row per point, ?i its 1-based position\n  BIND (?pt[1] AS ?x)\n  BIND (?pt[2] AS ?y)\n}\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab, walking the sequence: `UNNEST(?pts AS ?pt AT ?i)` makes one solution per member, with its 1-based position in `?i`. Each member is itself a sequence, so `?pt[1]` and `?pt[2]` are the coordinates. `( ?first ... ?last )` in a pattern would take the two ends and skip whatever lies between."
   },
   {
     "schemaLabel": "rdf-array: a playlist of tracks",
@@ -84,6 +110,19 @@
     "comment": "The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match."
   },
   {
+    "schemaLabel": "rdf-array: a playlist of tracks",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Playlist> {\n  :title  xsd:string ;\n  :tracks LIST + @<Track>   # one or more tracks, in order\n}\n\n<Track> {\n  :title   xsd:string ;\n  :seconds xsd:integer\n}\n",
+    "dataLabel": "two tracks: the tracks, in order (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<mix> :title \"Monday\" ;\n      :tracks (<t1> <t2>) .\n\n<t1> :title \"Intro\" ; :seconds 95 .\n<t2> :title \"Outro\" ; :seconds 210 .\n",
+    "queryMap": "<mix>@<Playlist>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?i ?track ?title ?seconds\nWHERE {\n  :mix :tracks ?tracks .\n  UNNEST (?tracks AS ?track AT ?i)   # each member is an IRI, so join on it\n  ?track :title ?title ; :seconds ?seconds .\n}\nORDER BY ?i\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab, walking the sequence: the members are IRIs, so `UNNEST` hands each one out in order and ordinary triple patterns take it from there. That is all that walking rdf:first and rdf:rest ever did, in one line, and `?i` is the position the ladder never gave you."
+  },
+  {
     "schemaLabel": "rdf-array: a bag of anything",
     "schema": "PREFIX : <http://a.example/>\n\n<Bag> {\n  :items LIST * .   # a sequence, of any length, of anything\n}\n",
     "dataLabel": "the empty sequence, and an IRI that is no sequence",
@@ -104,6 +143,19 @@
       "../../extension-sparql/doc/ShExSparqlPlugin.js"
     ],
     "comment": "The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match."
+  },
+  {
+    "schemaLabel": "rdf-array: a bag of anything",
+    "schema": "PREFIX : <http://a.example/>\n\n<Bag> {\n  :items LIST * .   # a sequence, of any length, of anything\n}\n",
+    "dataLabel": "the empty sequence, and an IRI that is no sequence: the members (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<empty>    :items () .\n<notASeq>  :items <x> .\n",
+    "queryMap": "<empty>@<Bag>,\n<notASeq>@!<Bag>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?s ?isSeq ?n ?m\nWHERE {\n  ?s :items ?items .\n  BIND (isSEQ(?items)  AS ?isSeq)\n  BIND (SEQLEN(?items) AS ?n)\n  OPTIONAL { UNNEST (?items AS ?m) }   # nothing to walk in (), nothing to walk in <x>\n}\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab, walking the sequence: `()` is a sequence of length 0, so `isSEQ` is true, `SEQLEN` is 0 and `UNNEST` yields nothing, which the `OPTIONAL` keeps as a row with `?m` unbound. `<x>` is no sequence: `isSEQ` is false and `SEQLEN` is an error, which `BIND` turns into an unbound `?n`."
   },
   {
     "schemaLabel": "clinical observation",
