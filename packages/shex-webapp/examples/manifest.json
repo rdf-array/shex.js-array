@@ -116,7 +116,7 @@
     "data": "PREFIX : <http://a.example/>\n\n<mix> :title \"Monday\" ;\n      :tracks (<t1> <t2>) .\n\n<t1> :title \"Intro\" ; :seconds 95 .\n<t2> :title \"Outro\" ; :seconds 210 .\n",
     "queryMap": "<mix>@<Playlist>\n",
     "status": "conformant",
-    "query": "PREFIX : <http://a.example/>\nSELECT ?i ?track ?title ?seconds\nWHERE {\n  :mix :tracks ?tracks .\n  UNNEST (?tracks AS ?track AT ?i)   # each member is an IRI, so join on it\n  ?track :title ?title ; :seconds ?seconds .\n}\nORDER BY ?i\n",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?mix ?i ?track ?title ?seconds\nWHERE {\n  ?mix :tracks ?tracks .\n  UNNEST (?tracks AS ?track AT ?i)   # each member is an IRI, so join on it\n  ?track :title ?title ; :seconds ?seconds .\n}\nORDER BY ?i\n",
     "plugins": [
       "../../extension-sparql/doc/ShExSparqlPlugin.js"
     ],

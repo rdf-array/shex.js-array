@@ -263,9 +263,9 @@
   status: conformant
   query: |
     PREFIX : <http://a.example/>
-    SELECT ?i ?track ?title ?seconds
+    SELECT ?mix ?i ?track ?title ?seconds
     WHERE {
-      :mix :tracks ?tracks .
+      ?mix :tracks ?tracks .
       UNNEST (?tracks AS ?track AT ?i)   # each member is an IRI, so join on it
       ?track :title ?title ; :seconds ?seconds .
     }
