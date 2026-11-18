@@ -158,6 +158,76 @@
     "comment": "The SPARQL tab, walking the sequence: `()` is a sequence of length 0, so `isSEQ` is true, `SEQLEN` is 0 and `UNNEST` yields nothing, which the `OPTIONAL` keeps as a row with `?m` unbound. `<x>` is no sequence: `isSEQ` is false and `SEQLEN` is an error, which `BIND` turns into an unbound `?n`."
   },
   {
+    "schemaLabel": "rdf-undef: a colour may leave a channel unknown",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot\n}\n",
+    "dataLabel": "red, and faded with a slot",
+    "data": "PREFIX : <http://a.example/>\n\n<red>   :rgb (255 0 0) .\n<faded> :rgb (255 undef 0) .\n",
+    "queryMap": "<red>@<Colour>,\n<faded>@<Colour>\n",
+    "status": "conformant",
+    "comment": "`(255 undef 0)` is a sequence of three positions with nothing at the second: a slot, not a value. No value constraint is met at a slot, so a member expression says `undef` to allow one: `( xsd:integer … | undef ) {3}` takes a byte or a slot, three times."
+  },
+  {
+    "schemaLabel": "rdf-undef: a colour is three bytes, no slots",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes\n}\n",
+    "dataLabel": "faded has a slot",
+    "data": "PREFIX : <http://a.example/>\n\n<red>   :rgb (255 0 0) .\n<faded> :rgb (255 undef 0) .\n",
+    "queryMap": "<red>@<Colour>,\n<faded>@!<Colour>\n",
+    "status": "conformant",
+    "comment": "The rdf-sequences shape, unchanged: `LIST {3} xsd:integer …` wants a byte at every position, and a slot meets no value constraint, `.` included, so `<faded>` fails at its second member, which the `!` claims."
+  },
+  {
+    "schemaLabel": "rdf-undef: a colour may leave a channel unknown",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot\n}\n",
+    "dataLabel": "red and faded: every triple (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<red>   :rgb (255 0 0) .\n<faded> :rgb (255 undef 0) .\n",
+    "queryMap": "<red>@<Colour>,\n<faded>@<Colour>\n",
+    "status": "conformant",
+    "query": "SELECT ?s ?p ?o\nWHERE { ?s ?p ?o }\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab: `(255 undef 0)` is one term, and comes back written with its slot."
+  },
+  {
+    "schemaLabel": "rdf-undef: a colour may leave a channel unknown",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot\n}\n",
+    "dataLabel": "red and faded: the members (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<red>   :rgb (255 0 0) .\n<faded> :rgb (255 undef 0) .\n",
+    "queryMap": "<red>@<Colour>,\n<faded>@<Colour>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?s ?r ?g ?b ?i ?m\nWHERE {\n  ?s :rgb (?r ?g ?b) .          # at the slot, ?g stays unbound\n  ?s :rgb ?rgb .\n  UNNEST (?rgb AS ?m AT ?i)     # three rows each; at <faded> the second has no ?m\n}\nORDER BY ?s ?i\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab, walking the sequence: a slot binds nothing, so `( ?r ?g ?b )` leaves `?g` unbound at `<faded>`, as `VALUES` does with `UNDEF`, and `UNNEST` still yields three rows, one of them with `?m` unbound. `FILTER (BOUND(?m))` would drop that row."
+  },
+  {
+    "schemaLabel": "rdf-undef: a colour may leave a channel unknown",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot\n}\n",
+    "dataLabel": "red and faded: a constant, undef, and a default (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<red>   :rgb (255 0 0) .\n<faded> :rgb (255 undef 0) .\n",
+    "queryMap": "<red>@<Colour>,\n<faded>@<Colour>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nSELECT ?s ?exact ?slotted ?green ?filled\nWHERE {\n  ?s :rgb ?rgb .\n  BIND (EXISTS { ?s :rgb (255 0 0) }     AS ?exact)    # a constant matches no slot\n  BIND (EXISTS { ?s :rgb (?r undef ?b) } AS ?slotted)  # undef matches only a slot\n  BIND (?rgb[2]                          AS ?green)    # an error at a slot: unbound\n  BIND (COALESCE(?rgb[2], \"unknown\")     AS ?filled)\n}\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab: a constant in a pattern matches no slot, so `(255 0 0)` finds only `<red>`; `undef` in a pattern matches only a slot, so `(?r undef ?b)` finds only `<faded>`; `?rgb[2]` is an error at a slot, which `BIND` leaves unbound and `COALESCE` fills in."
+  },
+  {
+    "schemaLabel": "rdf-undef: a colour may leave a channel unknown",
+    "schema": "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX : <http://a.example/>\n\n<Colour> {\n  :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot\n}\n",
+    "dataLabel": "red and faded: a CONSTRUCT writes the slot back (SPARQL)",
+    "data": "PREFIX : <http://a.example/>\n\n<red>   :rgb (255 0 0) .\n<faded> :rgb (255 undef 0) .\n",
+    "queryMap": "<red>@<Colour>,\n<faded>@<Colour>\n",
+    "status": "conformant",
+    "query": "PREFIX : <http://a.example/>\nCONSTRUCT { ?s :bgr (?b ?g ?r) }\nWHERE { ?s :rgb (?r ?g ?b) }\n",
+    "plugins": [
+      "../../extension-sparql/doc/ShExSparqlPlugin.js"
+    ],
+    "comment": "The SPARQL tab: an unbound variable in a template's sequence is a slot, so what a pattern reads, a template writes back: `<faded>` gets `:bgr (0 undef 255)`."
+  },
+  {
     "schemaLabel": "clinical observation",
     "schemaURL": "ClinObs.shex",
     "dataLabel": "the least an Observation can be",
