@@ -2,26 +2,31 @@ name: pages
 
 # Build the doc/webpacks bundles (gitignored; jquery-components.* and its
 # hashed assets stay committed -- see .gitignore) and deploy the result to
-# GitHub Pages with actions/deploy-pages, for the rdf-array fork:
+# GitHub Pages with actions/deploy-pages, for the rdf-array fork, from two
+# branches:
 #
-#   https://rdf-array.github.io/shex.js-array/
+#   https://rdf-array.github.io/shex.js-array/                       rdf-sequences
 #   https://rdf-array.github.io/shex.js-array/packages/shex-webapp/doc/shex.html
+#   https://rdf-array.github.io/shex.js-array/rdf-undef/             rdf-undef (empty slots)
+#   https://rdf-array.github.io/shex.js-array/rdf-undef/packages/shex-webapp/doc/shex.html
 #
 # This is the fork's counterpart of webapps-site.yml, which pushes a
-# `gh-pages` branch for shex.js.org. The artifact is the tracked tree plus the
-# built bundles, laid out as in the repo: everything points at everything
-# else relatively (shex.html loads webpacks/shex-webapp.js, shexmap-simple.html
-# redirects to ../../shex-webapp/doc/shex.html with a plugin URL, and a
-# plugin's `scripts` resolve against the plugin), so a plugin's bundle has to
-# be published beside it. Nothing accumulates between deploys, so unlike the
-# gh-pages publish there is no history to shed.
+# `gh-pages` branch for shex.js.org. Each branch's site is its tracked tree
+# plus the built bundles, laid out as in the repo: everything points at
+# everything else relatively (shex.html loads webpacks/shex-webapp.js,
+# shexmap-simple.html redirects to ../../shex-webapp/doc/shex.html with a
+# plugin URL, and a plugin's `scripts` resolve against the plugin), so a
+# plugin's bundle has to be published beside it. The rdf-sequences site is the
+# root and the rdf-undef site is under rdf-undef/; a push to either branch
+# rebuilds both and redeploys the whole site. Nothing accumulates between
+# deploys, so unlike the gh-pages publish there is no history to shed.
 #
 # One-time setup: Settings -> Pages -> Source: "GitHub Actions". The
-# github-pages environment must allow the branch named below.
+# github-pages environment must allow both branches named below.
 
 on:
   push:
-    branches: [rdf-sequences]
+    branches: [rdf-sequences, rdf-undef]
   workflow_dispatch:
 
 permissions:
@@ -37,9 +42,15 @@ concurrency:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [rdf-sequences, rdf-undef]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
       - name: clone shexTest alongside the checkout, on the ref the shex-test dependency names
         run: |
           REF=$(sed -n 's|.*"shex-test": "github:rdf-array/shexTest-array#\([^"]*\)".*|\1|p' package.json)
@@ -52,18 +63,18 @@ jobs:
       # one knows no sequence terms: use comunica-array, a yarn monorepo whose
       # postinstall builds it, over traqula-array (also built by its postinstall),
       # both beside this checkout as ../comunica-array's `file:` dependency and
-      # `link:../traqula-array` resolutions expect
+      # `link:../traqula-array` resolutions expect, each on the branch being built
       - name: clone and build traqula-array and comunica-array alongside the checkout
         run: |
           for repo in traqula-array comunica-array; do
-            git clone --depth=1 --branch=rdf-sequences "https://github.com/rdf-array/$repo.git" "../$repo"
+            git clone --depth=1 --branch="${{ matrix.branch }}" "https://github.com/rdf-array/$repo.git" "../$repo"
             (cd "../$repo" && yarn install --frozen-lockfile)
           done
       # the github: dependencies on the rdf-array forks (n3, lezer-*,
       # @rdfjs/types) build in their own `prepare` scripts during this install
       - run: npm ci
       - run: npm run webpacks-all
-      - name: stage the site
+      - name: stage the branch's site
         run: |
           mkdir _site
           # the tracked tree, then the (ignored) built bundles
@@ -81,13 +92,31 @@ jobs:
             echo 'index.html still mentions STRIP-FOR-PUBLICATION after stripping (unbalanced markers?)' >&2
             exit 1
           fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site-${{ matrix.branch }}
+          path: _site
+          include-hidden-files: true
+
+  assemble:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: site-rdf-sequences
+          path: _site
+      - uses: actions/download-artifact@v8
+        with:
+          name: site-rdf-undef
+          path: _site/rdf-undef
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
   deploy:
-    needs: build
+    needs: assemble
     runs-on: ubuntu-latest
     environment:
       name: github-pages
