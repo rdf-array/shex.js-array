@@ -47,6 +47,7 @@ jobs:
       matrix:
         branch: [rdf-sequences, rdf-undef]
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:
@@ -71,8 +72,14 @@ jobs:
             (cd "../$repo" && yarn install --frozen-lockfile)
           done
       # the github: dependencies on the rdf-array forks (n3, lezer-*,
-      # @rdfjs/types) build in their own `prepare` scripts during this install
-      - run: npm ci
+      # @rdfjs/types) build in their own `prepare` scripts during this install.
+      # --foreground-scripts runs those builds one at a time and shows their
+      # output: run in parallel (N3.js-array's browser bundle among them) they
+      # starved the runner, which GitHub then reported as lost or cancelled.
+      # A branch's npm cache is only visible to runs on that branch or the
+      # default branch, so a run on rdf-sequences builds rdf-undef's forks from
+      # scratch every time.
+      - run: npm ci --foreground-scripts
       - run: npm run webpacks-all
       - name: stage the branch's site
         run: |
