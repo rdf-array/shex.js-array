@@ -23,7 +23,6 @@
  */
 import type * as RdfJs from "@rdfjs/types";
 import type {QuerySource} from "@shexjs/neighborhood-api";
-import {Parser as SparqlParser} from "sparqljs";
 import {Writer, DataFactory} from "n3";
 const RelativizeIri = require("relativize-url").relativize;
 import {topoWrite, reindent, expandLiterals} from "n3writer-wrapper-array";
@@ -40,9 +39,21 @@ export type Answer =
 
 let engine: any = null;
 
-/** the prefixes a query declares, to write its answer with */
+/** the prefixes a query declares, to write its answer with.
+ *
+ * Read off the text rather than parsed out of it: the parser that knows
+ * SPARQL-array (UNNEST, ?x[1], undef, ...) is Comunica's, which run() uses,
+ * and a stock one would refuse such a query before it ran.  A PREFIX
+ * declaration is a line of the prologue, so a scan of the text, its strings
+ * and comments blanked (an IRI may hold a #), finds them all. */
 export function queryPrefixes (text: string): Prefixes {
-  return {...(new SparqlParser().parse(text) as any).prefixes};
+  const prefixes: Prefixes = {};
+  const kept = /(<[^>\s]*>)|"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|#[^\n]*/g;
+  const decl = /\bPREFIX\s+([A-Za-z0-9_.-]*):\s*<([^>\s]*)>/gi;
+  const prologue = text.replace(kept, "$1");
+  for (let m = decl.exec(prologue); m; m = decl.exec(prologue))
+    prefixes[m[1]] = m[2];
+  return prefixes;
 }
 
 /** Run a query over a dataset (anything Comunica takes as a source: an
