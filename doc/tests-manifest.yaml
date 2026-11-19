@@ -67,6 +67,34 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
+- schemaLabel: 'rdf-array: a colour is three bytes'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes
+    }
+  dataLabel: 'red: the members (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red> :rgb (255 0 0) .
+  queryMap: |
+    <red>@<Colour>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?s ?r ?g ?b ?green ?n
+    WHERE {
+      ?s :rgb (?r ?g ?b) .           # one variable per member
+      ?s :rgb ?rgb .
+      BIND (?rgb[2]      AS ?green)  # the second member, 1-based
+      BIND (SEQLEN(?rgb) AS ?n)
+    }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab, walking the sequence: `( ?r ?g ?b )` in a pattern binds one variable from each member, `?rgb[2]` indexes it (1-based) and `SEQLEN(?rgb)` counts, so the three bytes come out as three columns of one row, not three rows of an rdf:rest walk.'
 - schemaLabel: 'rdf-array: a polygon is three or more points'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -106,6 +134,34 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
+- schemaLabel: 'rdf-array: a polygon is three or more points'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Polygon> {
+      :points LIST {3,} LIST {2} xsd:decimal   # 3 or more points, each a sequence of 2 decimals
+    }
+  dataLabel: 'a triangle: the points (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <triangle> :points ((0.0 0.0) (4.0 0.0) (0.0 3.0)) .
+  queryMap: |
+    <triangle>@<Polygon>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?s ?i ?x ?y
+    WHERE {
+      ?s :points ?pts .
+      UNNEST (?pts AS ?pt AT ?i)     # one row per point, ?i its 1-based position
+      BIND (?pt[1] AS ?x)
+      BIND (?pt[2] AS ?y)
+    }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab, walking the sequence: `UNNEST(?pts AS ?pt AT ?i)` makes one solution per member, with its 1-based position in `?i`. Each member is itself a sequence, so `?pt[1]` and `?pt[2]` are the coordinates. `( ?first ... ?last )` in a pattern would take the two ends and skip whatever lies between.'
 - schemaLabel: 'rdf-array: a playlist of tracks'
   schema: |
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -192,6 +248,44 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
+- schemaLabel: 'rdf-array: a playlist of tracks'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Playlist> {
+      :title  xsd:string ;
+      :tracks LIST + @<Track>   # one or more tracks, in order
+    }
+
+    <Track> {
+      :title   xsd:string ;
+      :seconds xsd:integer
+    }
+  dataLabel: 'two tracks: the tracks, in order (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <mix> :title "Monday" ;
+          :tracks (<t1> <t2>) .
+
+    <t1> :title "Intro" ; :seconds 95 .
+    <t2> :title "Outro" ; :seconds 210 .
+  queryMap: |
+    <mix>@<Playlist>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?mix ?i ?track ?title ?seconds
+    WHERE {
+      ?mix :tracks ?tracks .
+      UNNEST (?tracks AS ?track AT ?i)   # each member is an IRI, so join on it
+      ?track :title ?title ; :seconds ?seconds .
+    }
+    ORDER BY ?i
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab, walking the sequence: the members are IRIs, so `UNNEST` hands each one out in order and ordinary triple patterns take it from there. That is all that walking rdf:first and rdf:rest ever did, in one line, and `?i` is the position the ladder never gave you.'
 - schemaLabel: 'rdf-array: a bag of anything'
   schema: |
     PREFIX : <http://a.example/>
@@ -233,6 +327,183 @@
   plugins:
   - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
   comment: 'The SPARQL tab: the same data, asked for every triple. A sequence is one term, so it is one ?o ((255 0 0), not a ladder of rdf:first and rdf:rest triples), which is what the shapes above match.'
+- schemaLabel: 'rdf-array: a bag of anything'
+  schema: |
+    PREFIX : <http://a.example/>
+
+    <Bag> {
+      :items LIST * .   # a sequence, of any length, of anything
+    }
+  dataLabel: 'the empty sequence, and an IRI that is no sequence: the members (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <empty>    :items () .
+    <notASeq>  :items <x> .
+  queryMap: |
+    <empty>@<Bag>,
+    <notASeq>@!<Bag>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?s ?isSeq ?n ?m
+    WHERE {
+      ?s :items ?items .
+      BIND (isSEQ(?items)  AS ?isSeq)
+      BIND (SEQLEN(?items) AS ?n)
+      OPTIONAL { UNNEST (?items AS ?m) }   # nothing to walk in (), nothing to walk in <x>
+    }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab, walking the sequence: `()` is a sequence of length 0, so `isSEQ` is true, `SEQLEN` is 0 and `UNNEST` yields nothing, which the `OPTIONAL` keeps as a row with `?m` unbound. `<x>` is no sequence: `isSEQ` is false and `SEQLEN` is an error, which `BIND` turns into an unbound `?n`.'
+- schemaLabel: 'rdf-undef: a colour may leave a channel unknown'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot
+    }
+  dataLabel: 'red, and faded with a slot'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red>   :rgb (255 0 0) .
+    <faded> :rgb (255 undef 0) .
+  queryMap: |
+    <red>@<Colour>,
+    <faded>@<Colour>
+  status: conformant
+  comment: '`(255 undef 0)` is a sequence of three positions with nothing at the second: a slot, not a value. No value constraint is met at a slot, so a member expression says `undef` to allow one: `( xsd:integer … | undef ) {3}` takes a byte or a slot, three times.'
+- schemaLabel: 'rdf-undef: a colour is three bytes, no slots'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST {3} xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255   # a sequence of exactly 3 bytes
+    }
+  dataLabel: 'faded has a slot'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red>   :rgb (255 0 0) .
+    <faded> :rgb (255 undef 0) .
+  queryMap: |
+    <red>@<Colour>,
+    <faded>@!<Colour>
+  status: conformant
+  comment: 'The rdf-sequences shape, unchanged: `LIST {3} xsd:integer …` wants a byte at every position, and a slot meets no value constraint, `.` included, so `<faded>` fails at its second member, which the `!` claims.'
+- schemaLabel: 'rdf-undef: a colour may leave a channel unknown'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot
+    }
+  dataLabel: 'red and faded: every triple (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red>   :rgb (255 0 0) .
+    <faded> :rgb (255 undef 0) .
+  queryMap: |
+    <red>@<Colour>,
+    <faded>@<Colour>
+  status: conformant
+  query: |
+    SELECT ?s ?p ?o
+    WHERE { ?s ?p ?o }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: `(255 undef 0)` is one term, and comes back written with its slot.'
+- schemaLabel: 'rdf-undef: a colour may leave a channel unknown'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot
+    }
+  dataLabel: 'red and faded: the members (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red>   :rgb (255 0 0) .
+    <faded> :rgb (255 undef 0) .
+  queryMap: |
+    <red>@<Colour>,
+    <faded>@<Colour>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?s ?r ?g ?b ?i ?m
+    WHERE {
+      ?s :rgb (?r ?g ?b) .          # at the slot, ?g stays unbound
+      ?s :rgb ?rgb .
+      UNNEST (?rgb AS ?m AT ?i)     # three rows each; at <faded> the second has no ?m
+    }
+    ORDER BY ?s ?i
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab, walking the sequence: a slot binds nothing, so `( ?r ?g ?b )` leaves `?g` unbound at `<faded>`, as `VALUES` does with `UNDEF`, and `UNNEST` still yields three rows, one of them with `?m` unbound. `FILTER (BOUND(?m))` would drop that row.'
+- schemaLabel: 'rdf-undef: a colour may leave a channel unknown'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot
+    }
+  dataLabel: 'red and faded: a constant, undef, and a default (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red>   :rgb (255 0 0) .
+    <faded> :rgb (255 undef 0) .
+  queryMap: |
+    <red>@<Colour>,
+    <faded>@<Colour>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    SELECT ?s ?exact ?slotted ?green ?filled
+    WHERE {
+      ?s :rgb ?rgb .
+      BIND (EXISTS { ?s :rgb (255 0 0) }     AS ?exact)    # a constant matches no slot
+      BIND (EXISTS { ?s :rgb (?r undef ?b) } AS ?slotted)  # undef matches only a slot
+      BIND (?rgb[2]                          AS ?green)    # an error at a slot: unbound
+      BIND (COALESCE(?rgb[2], "unknown")     AS ?filled)
+    }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: a constant in a pattern matches no slot, so `(255 0 0)` finds only `<red>`; `undef` in a pattern matches only a slot, so `(?r undef ?b)` finds only `<faded>`; `?rgb[2]` is an error at a slot, which `BIND` leaves unbound and `COALESCE` fills in.'
+- schemaLabel: 'rdf-undef: a colour may leave a channel unknown'
+  schema: |
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX : <http://a.example/>
+
+    <Colour> {
+      :rgb LIST ( ( xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 255 | undef ) {3} )   # three bytes, any of them a slot
+    }
+  dataLabel: 'red and faded: a CONSTRUCT writes the slot back (SPARQL)'
+  data: |
+    PREFIX : <http://a.example/>
+
+    <red>   :rgb (255 0 0) .
+    <faded> :rgb (255 undef 0) .
+  queryMap: |
+    <red>@<Colour>,
+    <faded>@<Colour>
+  status: conformant
+  query: |
+    PREFIX : <http://a.example/>
+    CONSTRUCT { ?s :bgr (?b ?g ?r) }
+    WHERE { ?s :rgb (?r ?g ?b) }
+  plugins:
+  - ../packages/extension-sparql/doc/ShExSparqlPlugin.js
+  comment: 'The SPARQL tab: an unbound variable in a template''s sequence is a slot, so what a pattern reads, a template writes back: `<faded>` gets `:bgr (0 undef 255)`.'
 - schemaLabel: clinical observation
   schemaURL: ../packages/shex-webapp/examples/ClinObs.shex
   dataLabel: the least an Observation can be
